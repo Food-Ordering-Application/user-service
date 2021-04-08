@@ -1,16 +1,26 @@
-import { Controller } from '@nestjs/common';
+import { Controller, HttpStatus, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { IUserCreateResponse } from './interfaces/user-create-response.interface';
+import { IUser } from './interfaces/user.interface';
 
 @Controller()
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @MessagePattern('createCustomer')
-  create(@Payload() createCustomerDto: CreateCustomerDto) {
-    return this.customerService.create(createCustomerDto);
+  async create(
+    @Payload() createCustomerDto: CreateCustomerDto,
+  ): Promise<IUserCreateResponse> {
+    const user = await this.customerService.create(createCustomerDto);
+    return {
+      user,
+      message: 'User created successfully',
+      status: HttpStatus.CREATED,
+      errors: null,
+    };
   }
 
   @MessagePattern('findAllCustomer')

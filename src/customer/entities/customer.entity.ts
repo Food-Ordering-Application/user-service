@@ -5,7 +5,7 @@ export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   phoneNumber: string;
 
   @Column()
