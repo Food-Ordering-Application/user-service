@@ -5,6 +5,8 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 
+import * as bcrypt from 'bcrypt';
+
 @Injectable()
 export class CustomerService {
   constructor(
@@ -13,13 +15,20 @@ export class CustomerService {
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto) {
-    const newCustomer = this.customersRepository.create(createCustomerDto);
-    await this.customersRepository.save(createCustomerDto);
+    // Hash password
+    const newCustomer = new Customer();
+    newCustomer.username = createCustomerDto.username;
+    newCustomer.password = await bcrypt.hash(createCustomerDto.password, 12);
+    await this.customersRepository.save(newCustomer);
     return newCustomer;
   }
 
   findAll() {
     return this.customersRepository.find();
+  }
+
+  async findByUsername(username: string): Promise<Customer> {
+    return this.customersRepository.findOne({ username: username });
   }
 
   findOne(id: number) {
