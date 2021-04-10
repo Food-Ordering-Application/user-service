@@ -24,14 +24,14 @@ export class CustomerController {
     if (customerWithUsername) {
       result = {
         status: HttpStatus.CONFLICT,
-        message: 'user_create_conflict',
+        message: 'Username already exists',
         user: null,
-        errors: {
-          username: {
-            message: 'Username already exists',
-            path: 'username',
-          },
-        },
+        // errors: {
+        //   username: {
+        //     message: 'Username already exists',
+        //     path: 'username',
+        //   },
+        // },
       };
     } else {
       // Nếu chưa tồn tại thì tạo user mới
@@ -41,9 +41,9 @@ export class CustomerController {
       delete newCustomer.password;
       result = {
         status: HttpStatus.CREATED,
-        message: 'user_create_success',
+        message: 'User created successfully',
         user: newCustomer,
-        errors: null,
+        // errors: null,
       };
     }
     return result;
