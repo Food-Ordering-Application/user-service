@@ -5,7 +5,6 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 import { IUserCreateResponse } from './interfaces/user-create-response.interface';
-import { IUser } from './interfaces/user.interface';
 
 @Controller()
 export class CustomerController {
