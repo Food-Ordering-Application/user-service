@@ -14,49 +14,17 @@ export class CustomerController {
   async create(
     @Payload() createCustomerDto: CreateCustomerDto,
   ): Promise<IUserCreateResponse> {
-    let result: IUserCreateResponse;
+    return this.customerService.create(createCustomerDto);
+  }
 
-    // Tìm xem có username có tồn tại hay chưa
-    const customerWithUsername = await this.customerService.findByUsername(
-      createCustomerDto.username,
-    );
-    // Nếu người dùng đã tồn tại
-    if (customerWithUsername) {
-      result = {
-        status: HttpStatus.CONFLICT,
-        message: 'Username already exists',
-        user: null,
-        // errors: {
-        //   username: {
-        //     message: 'Username already exists',
-        //     path: 'username',
-        //   },
-        // },
-      };
-    } else {
-      // Nếu chưa tồn tại thì tạo user mới
-      const newCustomer: Customer = await this.customerService.create(
-        createCustomerDto,
-      );
-      delete newCustomer.password;
-      result = {
-        status: HttpStatus.CREATED,
-        message: 'User created successfully',
-        user: newCustomer,
-        // errors: null,
-      };
-    }
-    return result;
+  @MessagePattern('findCustomerByUsername')
+  findByUsername(@Payload() username: string): Promise<IUserCreateResponse> {
+    return this.customerService.findByUsername(username);
   }
 
   @MessagePattern('findAllCustomer')
   findAll() {
     return this.customerService.findAll();
-  }
-
-  @MessagePattern('findOneCustomer')
-  findOne(@Payload() id: number) {
-    return this.customerService.findOne(id);
   }
 
   @MessagePattern('updateCustomer')

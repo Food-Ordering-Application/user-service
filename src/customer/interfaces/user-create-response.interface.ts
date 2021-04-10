@@ -10,5 +10,4 @@ export interface IUserCreateResponse {
   status: number;
   message: string;
   user: Customer | null;
-  // error: { [key: string]: any };
 }
