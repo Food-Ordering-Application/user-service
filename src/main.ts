@@ -23,8 +23,8 @@ async function bootstrap() {
     {
       transport: Transport.RMQ,
       options: {
-        urls: ['amqp://admin:admin@rabbitmq:5672'],
-        queue: 'cats_queue',
+        urls: [process.env.AMQP_URL],
+        queue: process.env.USERS_AMQP_QUEUE,
         queueOptions: {
           durable: false,
         },
