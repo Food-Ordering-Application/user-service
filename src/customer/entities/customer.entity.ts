@@ -5,13 +5,13 @@ export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({})
   username: string;
 
   @Column()
   password: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ nullable: true })
   phoneNumber: string;
 
   @Column({ nullable: true })
@@ -21,5 +21,11 @@ export class Customer {
   gender: string;
 
   @Column({ nullable: true })
-  imageUrl: string;
+  avatar: string;
+
+  @Column({ nullable: true })
+  email: string;
+
+  @Column()
+  isPhoneNumberVerified: boolean;
 }
