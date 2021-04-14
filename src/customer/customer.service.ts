@@ -6,7 +6,11 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 
 import * as bcrypt from 'bcrypt';
-import { IUserCreateResponse } from './interfaces/user-create-response.interface';
+import cryptoRandomString from 'crypto-random-string';
+import { ICustomerCreateResponse } from './interfaces/customer-create-response.interface';
+import { SendPhoneNumberOTPVerifyDto } from './dto/send-otp-verify-customer.dto';
+import { ICustomerSendOTPVerifyResponse } from './interfaces/customer-send-otp-verify.interface';
+import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number.dto';
 
 @Injectable()
 export class CustomerService {
@@ -19,8 +23,8 @@ export class CustomerService {
 
   async create(
     createCustomerDto: CreateCustomerDto,
-  ): Promise<IUserCreateResponse> {
-    let result: IUserCreateResponse;
+  ): Promise<ICustomerCreateResponse> {
+    let result: ICustomerCreateResponse;
 
     // Tìm xem PhoneNumber có tồn tại hay chưa
     try {
@@ -62,11 +66,9 @@ export class CustomerService {
     }
   }
 
-  findAll() {
-    return this.customersRepository.find();
-  }
-
-  async findByPhoneNumber(phoneNumber: string): Promise<IUserCreateResponse> {
+  async findCustomerByPhoneNumber(
+    phoneNumber: string,
+  ): Promise<ICustomerCreateResponse> {
     try {
       const customer = await this.customersRepository.findOne({
         phoneNumber: phoneNumber,
@@ -86,15 +88,59 @@ export class CustomerService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} customer`;
+  async sendPhoneNumberOTPVerify(
+    sendPhoneNumberOTPVerifyDto: SendPhoneNumberOTPVerifyDto,
+  ): Promise<ICustomerSendOTPVerifyResponse> {
+    const otp = '123456';
+    this.logger.log(otp);
+    try {
+      // Tìm ra user lưu lại otp
+      const customer = await this.customersRepository.findOne({
+        phoneNumber: sendPhoneNumberOTPVerifyDto.phoneNumber,
+      });
+      customer.verifyPhoneNumberOTP = otp;
+      this.customersRepository.save(customer);
+      return {
+        status: HttpStatus.OK,
+        message: 'Otp sent successfully',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
   }
 
-  update(id: number, updateCustomerDto: UpdateCustomerDto) {
-    return `This action updates a #${id} customer`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} customer`;
+  async verifyCustomerPhoneNumber(
+    verifyCustomerPhoneNumberDto: VerifyCustomerPhoneNumberDto,
+  ): Promise<ICustomerSendOTPVerifyResponse> {
+    try {
+      // Tìm ra customer dựa trên phoneNumber
+      const customer = await this.customersRepository.findOne({
+        phoneNumber: verifyCustomerPhoneNumberDto.phoneNumber,
+      });
+      // Xét xem otp có khớp không
+      if (customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp) {
+        customer.verifyPhoneNumberOTP = null;
+        customer.isPhoneNumberVerified = true;
+        this.customersRepository.save(customer);
+        return {
+          status: HttpStatus.OK,
+          message: 'Verify customer phoneNumber successfully',
+        };
+      }
+      return {
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'OTP not match',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
   }
 }

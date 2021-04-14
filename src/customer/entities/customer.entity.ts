@@ -23,6 +23,9 @@ export class Customer {
   @Column({ nullable: true })
   email: string;
 
-  @Column({ default: true })
+  @Column({ default: false })
   isPhoneNumberVerified: boolean;
+
+  @Column({ nullable: true })
+  verifyPhoneNumberOTP: string;
 }
