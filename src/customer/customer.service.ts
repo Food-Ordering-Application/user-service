@@ -6,7 +6,6 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 
 import * as bcrypt from 'bcrypt';
-import cryptoRandomString from 'crypto-random-string';
 import { ICustomerCreateResponse } from './interfaces/customer-create-response.interface';
 import { SendPhoneNumberOTPVerifyDto } from './dto/send-otp-verify-customer.dto';
 import { ICustomerSendOTPVerifyResponse } from './interfaces/customer-send-otp-verify.interface';
@@ -122,6 +121,11 @@ export class CustomerService {
         phoneNumber: verifyCustomerPhoneNumberDto.phoneNumber,
       });
       // Xét xem otp có khớp không
+      this.logger.log(customer.verifyPhoneNumberOTP);
+      this.logger.log(verifyCustomerPhoneNumberDto.otp);
+      this.logger.log(
+        customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp,
+      );
       if (customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp) {
         customer.verifyPhoneNumberOTP = null;
         customer.isPhoneNumberVerified = true;
