@@ -22,23 +22,23 @@ export class CustomerService {
   ): Promise<IUserCreateResponse> {
     let result: IUserCreateResponse;
 
-    // Tìm xem có username có tồn tại hay chưa
+    // Tìm xem PhoneNumber có tồn tại hay chưa
     try {
       const customer = await this.customersRepository.findOne({
-        username: createCustomerDto.username,
+        phoneNumber: createCustomerDto.phoneNumber,
       });
       // Nếu người dùng đã tồn tại
       if (customer) {
         result = {
           status: HttpStatus.CONFLICT,
-          message: 'Username already exists',
+          message: 'PhoneNumber already exists',
           user: null,
         };
       } else {
         // Nếu chưa tồn tại thì tạo user mới
         // Hash password
         const newCustomer = new Customer();
-        newCustomer.username = createCustomerDto.username;
+        newCustomer.phoneNumber = createCustomerDto.phoneNumber;
         newCustomer.password = await bcrypt.hash(
           createCustomerDto.password,
           12,
@@ -66,10 +66,10 @@ export class CustomerService {
     return this.customersRepository.find();
   }
 
-  async findByUsername(username: string): Promise<IUserCreateResponse> {
+  async findByPhoneNumber(phoneNumber: string): Promise<IUserCreateResponse> {
     try {
       const customer = await this.customersRepository.findOne({
-        username: username,
+        phoneNumber: phoneNumber,
       });
       return {
         status: HttpStatus.OK,

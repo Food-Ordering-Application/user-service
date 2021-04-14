@@ -3,11 +3,11 @@ import Faker from 'faker';
 import { Customer } from '../../customer/entities/customer.entity';
 
 define(Customer, (faker: typeof Faker) => {
+  faker.locale = 'vi';
   const id = faker.random.uuid();
-  const username = faker.random.word();
   const password =
     '$2b$12$NxX9mMH8gU7nXqMMNP01SOUYq610ggc9S8XM0cvbM6GUHRykHhX0G';
-  const phoneNumber = faker.phone.phoneNumber();
+  const phoneNumber = faker.phone.phoneNumber('0#########');
   const avatar = faker.image.avatar();
   const gender = 'Male';
   const email = faker.internet.email();
@@ -18,7 +18,6 @@ define(Customer, (faker: typeof Faker) => {
   customer.id = id;
   customer.name = `${firstName} ${lastName}`;
   customer.password = password;
-  customer.username = username;
   customer.email = email;
   customer.phoneNumber = phoneNumber;
   customer.avatar = avatar;

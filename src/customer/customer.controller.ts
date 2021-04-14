@@ -3,7 +3,6 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { Customer } from './entities/customer.entity';
 import { IUserCreateResponse } from './interfaces/user-create-response.interface';
 
 @Controller()
@@ -17,9 +16,11 @@ export class CustomerController {
     return this.customerService.create(createCustomerDto);
   }
 
-  @MessagePattern('findCustomerByUsername')
-  findByUsername(@Payload() username: string): Promise<IUserCreateResponse> {
-    return this.customerService.findByUsername(username);
+  @MessagePattern('findCustomerByPhoneNumber')
+  findByPhoneNumber(
+    @Payload() phoneNumber: string,
+  ): Promise<IUserCreateResponse> {
+    return this.customerService.findByPhoneNumber(phoneNumber);
   }
 
   @MessagePattern('findAllCustomer')
