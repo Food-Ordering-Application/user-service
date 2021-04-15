@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { CustomerAddress } from './customer-address.entity';
 
 @Entity()
 export class Customer {
@@ -28,4 +29,10 @@ export class Customer {
 
   @Column({ nullable: true })
   verifyPhoneNumberOTP: string;
+
+  @OneToMany(
+    () => CustomerAddress,
+    (customerAddress) => customerAddress.customer,
+  )
+  customerAddresses: CustomerAddress[];
 }

@@ -4,6 +4,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { CustomerModule } from './customer/customer.module';
+import { AdminModule } from './admin/admin.module';
+import { MerchantModule } from './merchant/merchant.module';
+import { DeliverModule } from './deliver/deliver.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -20,6 +23,9 @@ import * as Joi from 'joi';
     }),
     DatabaseModule,
     CustomerModule,
+    AdminModule,
+    MerchantModule,
+    DeliverModule,
   ],
   controllers: [AppController],
   providers: [AppService],

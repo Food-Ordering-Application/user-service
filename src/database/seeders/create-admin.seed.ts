@@ -1,9 +1,9 @@
-import { Customer } from '../../customer/entities/customer.entity';
 import { Connection } from 'typeorm';
 import { Factory, Seeder } from 'typeorm-seeding';
+import { Admin } from '../../admin/entities/admin.entity';
 
-export default class CreateCustomers implements Seeder {
+export default class CreateAdmin implements Seeder {
   public async run(factory: Factory, connection: Connection): Promise<any> {
-    await factory(Customer)().createMany(50);
+    await factory(Admin)().createMany(5);
   }
 }
