@@ -13,7 +13,4 @@ export class Admin {
 
   @Column()
   name: string;
-
-  @Column({ default: true })
-  haveAbility: string;
 }
