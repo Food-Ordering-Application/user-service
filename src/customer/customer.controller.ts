@@ -3,9 +3,8 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { SendPhoneNumberOTPVerifyDto } from './dto/send-otp-verify-customer.dto';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number.dto';
-import { ICustomerCreateResponse } from './interfaces/customer-create-response.interface';
+import { ICustomerResponse } from './interfaces/customer-response.interface';
 import { ICustomerSendOTPVerifyResponse } from './interfaces/customer-send-otp-verify.interface';
 
 @Controller()
@@ -15,7 +14,7 @@ export class CustomerController {
   @MessagePattern('createCustomer')
   async create(
     @Payload() createCustomerDto: CreateCustomerDto,
-  ): Promise<ICustomerCreateResponse> {
+  ): Promise<ICustomerResponse> {
     return this.customerService.create(createCustomerDto);
   }
 
@@ -43,22 +42,13 @@ export class CustomerController {
   @MessagePattern('findCustomerByPhoneNumber')
   findCustomerByPhoneNumber(
     @Payload() phoneNumber: string,
-  ): Promise<ICustomerCreateResponse> {
+  ): Promise<ICustomerResponse> {
     return this.customerService.findCustomerByPhoneNumber(phoneNumber);
   }
 
-  // @MessagePattern('findAllCustomer')
-  // findAll() {
-  //   return this.customerService.findAll();
-  // }
-
-  // @MessagePattern('updateCustomer')
-  // update(@Payload() updateCustomerDto: UpdateCustomerDto) {
-  //   return this.customerService.update(updateCustomerDto.id, updateCustomerDto);
-  // }
-
-  // @MessagePattern('removeCustomer')
-  // remove(@Payload() id: number) {
-  //   return this.customerService.remove(id);
-  // }
+  // Tìm kiếm customer bằng số điện thoại
+  @MessagePattern('findCustomerById')
+  findCustomerById(@Payload() customerId: string): Promise<ICustomerResponse> {
+    return this.customerService.findCustomerById(customerId);
+  }
 }

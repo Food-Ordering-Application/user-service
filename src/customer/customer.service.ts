@@ -1,12 +1,11 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCustomerDto } from './dto/create-customer.dto';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 
 import * as bcrypt from 'bcrypt';
-import { ICustomerCreateResponse } from './interfaces/customer-create-response.interface';
+import { ICustomerResponse } from './interfaces/customer-response.interface';
 import { SendPhoneNumberOTPVerifyDto } from './dto/send-otp-verify-customer.dto';
 import { ICustomerSendOTPVerifyResponse } from './interfaces/customer-send-otp-verify.interface';
 import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number.dto';
@@ -22,8 +21,8 @@ export class CustomerService {
 
   async create(
     createCustomerDto: CreateCustomerDto,
-  ): Promise<ICustomerCreateResponse> {
-    let result: ICustomerCreateResponse;
+  ): Promise<ICustomerResponse> {
+    let result: ICustomerResponse;
 
     // Tìm xem PhoneNumber có tồn tại hay chưa
     try {
@@ -67,11 +66,32 @@ export class CustomerService {
 
   async findCustomerByPhoneNumber(
     phoneNumber: string,
-  ): Promise<ICustomerCreateResponse> {
+  ): Promise<ICustomerResponse> {
     try {
       const customer = await this.customersRepository.findOne({
         phoneNumber: phoneNumber,
       });
+      return {
+        status: HttpStatus.OK,
+        message: 'Customer was found successfully',
+        user: customer,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        user: null,
+      };
+    }
+  }
+
+  async findCustomerById(id: string): Promise<ICustomerResponse> {
+    try {
+      const customer = await this.customersRepository.findOne({
+        id,
+      });
+      delete customer.password;
       return {
         status: HttpStatus.OK,
         message: 'Customer was found successfully',
@@ -121,11 +141,6 @@ export class CustomerService {
         phoneNumber: verifyCustomerPhoneNumberDto.phoneNumber,
       });
       // Xét xem otp có khớp không
-      this.logger.log(customer.verifyPhoneNumberOTP);
-      this.logger.log(verifyCustomerPhoneNumberDto.otp);
-      this.logger.log(
-        customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp,
-      );
       if (customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp) {
         customer.verifyPhoneNumberOTP = null;
         customer.isPhoneNumberVerified = true;
