@@ -6,7 +6,7 @@ define(Customer, (faker: typeof Faker) => {
   faker.locale = 'vi';
   const id = faker.random.uuid();
   const password =
-    '$2b$12$NxX9mMH8gU7nXqMMNP01SOUYq610ggc9S8XM0cvbM6GUHRykHhX0G';
+    '$2y$12$sddMvwPsUtJpyApLotRmxe2QUQvB3o8sft.l8W4zzUU6UCBqu4ham';
   const phoneNumber = faker.phone.phoneNumber('0#########');
   const avatar = faker.image.avatar();
   const gender = 'Male';
