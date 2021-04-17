@@ -1,4 +1,4 @@
-import { define, factory } from 'typeorm-seeding';
+import { define } from 'typeorm-seeding';
 import Faker from 'faker';
 import { Admin } from '../../admin/entities/admin.entity';
 
