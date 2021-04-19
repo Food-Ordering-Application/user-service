@@ -6,30 +6,30 @@ import { UpdateMerchantDto } from './dto/update-merchant.dto';
 
 @Controller()
 export class MerchantController {
-  constructor(private readonly merchantService: MerchantService) {}
+  constructor(private readonly merchantService: MerchantService) { }
 
   @MessagePattern('createMerchant')
   create(@Payload() createMerchantDto: CreateMerchantDto) {
     return this.merchantService.create(createMerchantDto);
   }
 
-  @MessagePattern('findAllMerchant')
-  findAll() {
-    return this.merchantService.findAll();
-  }
+  // @MessagePattern('findAllMerchant')
+  // findAll() {
+  //   return this.merchantService.findAll();
+  // }
 
-  @MessagePattern('findOneMerchant')
-  findOne(@Payload() id: number) {
-    return this.merchantService.findOne(id);
-  }
+  // @MessagePattern('findOneMerchant')
+  // findOne(@Payload() id: number) {
+  //   return this.merchantService.findOne(id);
+  // }
 
-  @MessagePattern('updateMerchant')
-  update(@Payload() updateMerchantDto: UpdateMerchantDto) {
-    return this.merchantService.update(updateMerchantDto.id, updateMerchantDto);
-  }
+  // @MessagePattern('updateMerchant')
+  // update(@Payload() updateMerchantDto: UpdateMerchantDto) {
+  //   return this.merchantService.update(updateMerchantDto.id, updateMerchantDto);
+  // }
 
-  @MessagePattern('removeMerchant')
-  remove(@Payload() id: number) {
-    return this.merchantService.remove(id);
-  }
+  // @MessagePattern('removeMerchant')
+  // remove(@Payload() id: number) {
+  //   return this.merchantService.remove(id);
+  // }
 }
