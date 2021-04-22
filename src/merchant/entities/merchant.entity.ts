@@ -1,4 +1,4 @@
-import { hash } from "src/shared/helper";
+import { hash } from "../../shared/helper";
 import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
