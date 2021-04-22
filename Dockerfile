@@ -8,4 +8,6 @@ RUN npm install
 
 COPY . .
 
-CMD npm run db:setup && npm run start:dev
+RUN npm run db:setup
+
+CMD npm run start:dev
