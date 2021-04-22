@@ -1,8 +1,8 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { MerchantService } from './merchant.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { LoginMerchantDto } from './dto/login-merchant.dto';
+import { MerchantService } from './merchant.service';
 
 @Controller()
 export class MerchantController {
@@ -11,6 +11,12 @@ export class MerchantController {
   @MessagePattern('createMerchant')
   create(@Payload() createMerchantDto: CreateMerchantDto) {
     return this.merchantService.create(createMerchantDto);
+  }
+
+  @MessagePattern('getAuthenticatedMerchant')
+  getAuthenticatedMerchant(@Payload() loginMerchantDto: LoginMerchantDto) {
+    const { username, password } = loginMerchantDto;
+    return this.merchantService.getAuthenticatedMerchant(username, password);
   }
 
   // @MessagePattern('findAllMerchant')
