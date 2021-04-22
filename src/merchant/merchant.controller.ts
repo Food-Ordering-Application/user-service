@@ -1,3 +1,4 @@
+import { MerchantDto } from './dto/merchant.dto';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
@@ -19,23 +20,9 @@ export class MerchantController {
     return this.merchantService.getAuthenticatedMerchant(username, password);
   }
 
-  // @MessagePattern('findAllMerchant')
-  // findAll() {
-  //   return this.merchantService.findAll();
-  // }
-
-  // @MessagePattern('findOneMerchant')
-  // findOne(@Payload() id: number) {
-  //   return this.merchantService.findOne(id);
-  // }
-
-  // @MessagePattern('updateMerchant')
-  // update(@Payload() updateMerchantDto: UpdateMerchantDto) {
-  //   return this.merchantService.update(updateMerchantDto.id, updateMerchantDto);
-  // }
-
-  // @MessagePattern('removeMerchant')
-  // remove(@Payload() id: number) {
-  //   return this.merchantService.remove(id);
-  // }
+  // Lay thong tin merchant theo id
+  @MessagePattern('findMerchantById')
+  findMerchant(@Payload() id: string) {
+    return this.merchantService.findMerchantById(id);
+  }
 }

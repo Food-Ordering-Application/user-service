@@ -9,8 +9,7 @@ import { validateHashedPassword } from '../shared/helper';
 
 @Injectable()
 export class MerchantService {
-
-  private readonly logger = new Logger('CustomerService');
+  private readonly logger = new Logger('MerchantService');
 
   constructor(
     @InjectRepository(Merchant)
@@ -65,19 +64,23 @@ export class MerchantService {
     };
   }
 
-  // findAll() {
-  //   return `This action returns all merchant`;
-  // }
+  async findMerchantById(id: string) {
+    const merchant = await this.merchantsRepository.findOne({
+      id
+    });
 
-  // findOne(id: number) {
-  //   return `This action returns a #${id} merchant`;
-  // }
+    if (!merchant)
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Merchant was not found',
+        user: null,
+      };
 
-  // update(id: number, updateMerchantDto: UpdateMerchantDto) {
-  //   return `This action updates a #${id} merchant`;
-  // }
+    return {
+      status: HttpStatus.OK,
+      message: 'Merchant was found successfully',
+      user: MerchantDto.EntityToDTO(merchant),
+    };
+  }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} merchant`;
-  // }
 }
