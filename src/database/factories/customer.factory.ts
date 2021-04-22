@@ -3,7 +3,6 @@ import Faker from 'faker';
 import { Customer } from '../../customer/entities/customer.entity';
 
 define(Customer, (faker: typeof Faker) => {
-  faker.locale = 'vi';
   const id = faker.random.uuid();
   const password =
     '$2y$12$sddMvwPsUtJpyApLotRmxe2QUQvB3o8sft.l8W4zzUU6UCBqu4ham';
