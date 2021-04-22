@@ -1,11 +1,13 @@
-import { MerchantDto } from './dto/merchant.dto';
-import { Merchant } from './entities/merchant.entity';
+
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { UpdateMerchantDto } from './dto/update-merchant.dto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
+import { CreateMerchantDto } from './dto/create-merchant.dto';
+import { MerchantDto } from './dto/merchant.dto';
+import { Merchant } from './entities/merchant.entity';
+import { RestaurantProfile } from './entities/restaurant-profile.entity';
+import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 
 @Injectable()
 export class MerchantService {
@@ -14,6 +16,8 @@ export class MerchantService {
   constructor(
     @InjectRepository(Merchant)
     private merchantsRepository: Repository<Merchant>,
+    @InjectRepository(RestaurantProfile)
+    private restaurantProfileRepository: Repository<RestaurantProfile>,
   ) { }
 
   async create(createMerchantDto: CreateMerchantDto) {
@@ -83,4 +87,12 @@ export class MerchantService {
     };
   }
 
+  async handleRestaurantCreated(data: RestaurantCreatedEventPayload) {
+    const { merchantId, restaurantId } = data;
+    const restaurantProfile = this.restaurantProfileRepository.create({
+      restaurantId,
+      merchantId
+    });
+    await this.restaurantProfileRepository.save(restaurantProfile);
+  }
 }
