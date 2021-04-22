@@ -1,5 +1,6 @@
 import { hash } from "../../shared/helper";
-import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { RestaurantProfile } from "./restaurant-profile.entity";
 
 @Entity()
 export class Merchant {
@@ -32,6 +33,10 @@ export class Merchant {
 
   @Column({ default: false })
   isBanned: boolean;
+
+  @OneToMany(() => RestaurantProfile, (restaurantProfile) => restaurantProfile.merchantId)
+  profiles: RestaurantProfile[];
+
 
   private beforeUpdatePassword: string;
   @AfterLoad()
