@@ -12,9 +12,12 @@ export class CustomerAddress {
   @Column()
   address: string;
 
-  @Column()
-  latitude: string;
+  @Column({ default: 'TPHCM' })
+  city: string
 
-  @Column()
-  longtitude: string;
+  @Column({ default: 'TPHCM' })
+  area: string;
+
+  @Column({ type: 'geometry', spatialFeatureType: 'Point', srid: 4326 })
+  geom: { type: string; coordinates: number[] };
 }

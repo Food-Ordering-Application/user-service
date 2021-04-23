@@ -7,14 +7,22 @@ define(CustomerAddress, (faker: typeof Faker) => {
   faker.locale = 'vi';
   const id = faker.random.uuid();
   const address = faker.address.streetAddress(true);
+  const city = faker.address.city();
+  const area = faker.address.city();
   const latitude = faker.address.latitude();
   const longtitude = faker.address.longitude();
+
+  const geom = {
+    type: 'Point',
+    coordinates: [parseFloat(longtitude), parseFloat(latitude)],
+  };
 
   const customerAddress = new CustomerAddress();
   customerAddress.id = id;
   customerAddress.address = address;
-  customerAddress.latitude = latitude;
-  customerAddress.longtitude = longtitude;
+  customerAddress.area = area;
+  customerAddress.city = city;
+  customerAddress.geom = geom;
   customerAddress.customer = factory(Customer)() as any;
   return customerAddress;
 });
