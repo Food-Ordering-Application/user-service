@@ -1,3 +1,4 @@
+import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,10 +11,10 @@ import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
+import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 
 @Injectable()
 export class MerchantService {
-
   private readonly logger = new Logger('MerchantService');
 
   constructor(
@@ -99,7 +100,7 @@ export class MerchantService {
     await this.restaurantProfileRepository.save(restaurantProfile);
   }
 
-  async verifyRestaurant(verifyRestaurantDto: VerifyRestaurantDto) {
+  async verifyRestaurant(verifyRestaurantDto: VerifyRestaurantDto): Promise<IMerchantServiceResponse> {
     const { restaurantId } = verifyRestaurantDto;
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
       restaurantId
@@ -109,6 +110,7 @@ export class MerchantService {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'RestaurantId was not found',
+        data: null
       };
 
     await this.getVerifiedRestaurantProfile(restaurantProfile);
@@ -122,7 +124,31 @@ export class MerchantService {
     };
   }
 
-  async getVerifiedRestaurantProfile(restaurantProfile: RestaurantProfile) {
+  async verifyPosAppKey(verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
+    const { posAppKey } = verifyPosAppKeyDto;
+    const restaurantProfile = await this.restaurantProfileRepository.findOne({
+      posAppKey
+    });
+
+    if (!restaurantProfile)
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'PosAppKey was not found',
+        data: null
+      };
+
+    const { merchantId, restaurantId } = restaurantProfile;
+    return {
+      status: HttpStatus.OK,
+      message: 'Verify PosAppKey successfully',
+      data: {
+        merchantId,
+        restaurantId
+      }
+    };
+  }
+
+  private async getVerifiedRestaurantProfile(restaurantProfile: RestaurantProfile) {
     restaurantProfile.posAppKey = randomBytes(20).toString('hex').toUpperCase();
     try {
       await this.restaurantProfileRepository.save(restaurantProfile)

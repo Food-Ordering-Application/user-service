@@ -1,3 +1,4 @@
+import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { MerchantDto } from './dto/merchant.dto';
 import { Controller } from '@nestjs/common';
@@ -6,6 +7,7 @@ import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { LoginMerchantDto } from './dto/login-merchant.dto';
 import { MerchantService } from './merchant.service';
 import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
+import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 
 @Controller()
 export class MerchantController {
@@ -34,7 +36,11 @@ export class MerchantController {
   }
 
   @MessagePattern('verifyRestaurant')
-  async verifyRestaurant(@Payload() verifyRestaurantDto: VerifyRestaurantDto) {
-    return this.merchantService.verifyRestaurant(verifyRestaurantDto);
+  async verifyRestaurant(@Payload() verifyRestaurantDto: VerifyRestaurantDto): Promise<IMerchantServiceResponse> {
+    return await this.merchantService.verifyRestaurant(verifyRestaurantDto);
+  }
+  @MessagePattern('verifyPosAppKey')
+  async verifyPosAppKey(@Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
+    return await this.merchantService.verifyPosAppKey(verifyPosAppKeyDto);
   }
 }
