@@ -115,7 +115,7 @@ export class MerchantService {
 
     return {
       status: HttpStatus.OK,
-      message: 'Restaurant verified successfully',
+      message: 'Verify restaurant successfully',
       data: {
         posAppKey: restaurantProfile.posAppKey
       }
