@@ -1,16 +1,19 @@
 
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { MerchantDto } from './dto/merchant.dto';
+import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 
 @Injectable()
 export class MerchantService {
+
   private readonly logger = new Logger('MerchantService');
 
   constructor(
@@ -95,4 +98,38 @@ export class MerchantService {
     });
     await this.restaurantProfileRepository.save(restaurantProfile);
   }
+
+  async verifyRestaurant(verifyRestaurantDto: VerifyRestaurantDto) {
+    const { restaurantId } = verifyRestaurantDto;
+    const restaurantProfile = await this.restaurantProfileRepository.findOne({
+      restaurantId
+    });
+
+    if (!restaurantProfile)
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'RestaurantId was not found',
+      };
+
+    await this.getVerifiedRestaurantProfile(restaurantProfile);
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Restaurant verified successfully',
+      data: {
+        posAppKey: restaurantProfile.posAppKey
+      }
+    };
+  }
+
+  async getVerifiedRestaurantProfile(restaurantProfile: RestaurantProfile) {
+    restaurantProfile.posAppKey = randomBytes(20).toString('hex').toUpperCase();
+    try {
+      await this.restaurantProfileRepository.save(restaurantProfile)
+    }
+    catch (e) {
+      this.getVerifiedRestaurantProfile(restaurantProfile);
+    }
+  }
+
 }

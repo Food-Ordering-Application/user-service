@@ -5,6 +5,7 @@ import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { LoginMerchantDto } from './dto/login-merchant.dto';
 import { MerchantService } from './merchant.service';
+import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 
 @Controller()
 export class MerchantController {
@@ -23,12 +24,17 @@ export class MerchantController {
 
   // Lay thong tin merchant theo id
   @MessagePattern('findMerchantById')
-  findMerchant(@Payload() id: string) {
-    return this.merchantService.findMerchantById(id);
+  async findMerchant(@Payload() id: string) {
+    return await this.merchantService.findMerchantById(id);
   }
 
   @EventPattern('restaurant_created')
   async handleRestaurantCreated(data: RestaurantCreatedEventPayload) {
     return await this.merchantService.handleRestaurantCreated(data);
+  }
+
+  @MessagePattern('verifyRestaurant')
+  async verifyRestaurant(@Payload() verifyRestaurantDto: VerifyRestaurantDto) {
+    return this.merchantService.verifyRestaurant(verifyRestaurantDto);
   }
 }
