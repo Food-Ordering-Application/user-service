@@ -17,7 +17,7 @@ export class CustomerService {
   constructor(
     @InjectRepository(Customer)
     private customersRepository: Repository<Customer>,
-  ) {}
+  ) { }
 
   async create(
     createCustomerDto: CreateCustomerDto,
@@ -41,10 +41,8 @@ export class CustomerService {
         // Hash password
         const newCustomer = new Customer();
         newCustomer.phoneNumber = createCustomerDto.phoneNumber;
-        newCustomer.password = await bcrypt.hash(
-          createCustomerDto.password,
-          12,
-        );
+        newCustomer.password = createCustomerDto.password;
+
         await this.customersRepository.save(newCustomer);
         delete newCustomer.password;
         result = {
