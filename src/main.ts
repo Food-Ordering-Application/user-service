@@ -21,8 +21,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [process.env.AMQP_URL],
-      // TODO
-      queue: 'restaurant_event_queue',
+      queue: process.env.RESTAURANT_EVENT_AMQP_QUEUE,
       queueOptions: {
         durable: false,
       },
@@ -30,7 +29,7 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservicesAsync();
-  await app.listen(3001, () => console.log('User microservice is listening', process.env.RESTAURANT_EVENT_AMQP_QUEUE));
+  await app.listen(3001, () => console.log('User microservice is listening'));
   // const app = await NestFactory.createMicroservice<MicroserviceOptions>(
   //   AppModule,
   //   {
