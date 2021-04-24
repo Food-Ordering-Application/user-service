@@ -1,3 +1,4 @@
+import { IStaffServiceResponse } from './interfaces/staff-service-response.interface';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { StaffService } from './staff.service';
@@ -6,30 +7,30 @@ import { UpdateStaffDto } from './dto/update-staff.dto';
 
 @Controller()
 export class StaffController {
-  constructor(private readonly staffService: StaffService) {}
+  constructor(private readonly staffService: StaffService) { }
 
   @MessagePattern('createStaff')
-  create(@Payload() createStaffDto: CreateStaffDto) {
-    return this.staffService.create(createStaffDto);
+  async create(@Payload() createStaffDto: CreateStaffDto): Promise<IStaffServiceResponse> {
+    return await this.staffService.create(createStaffDto);
   }
 
   @MessagePattern('findAllStaff')
-  findAll() {
-    return this.staffService.findAll();
+  async findAll(): Promise<IStaffServiceResponse> {
+    return await this.staffService.findAll();
   }
 
   @MessagePattern('findOneStaff')
-  findOne(@Payload() id: number) {
-    return this.staffService.findOne(id);
+  async findOne(@Payload() id: number): Promise<IStaffServiceResponse> {
+    return await this.staffService.findOne(id);
   }
 
   @MessagePattern('updateStaff')
-  update(@Payload() updateStaffDto: UpdateStaffDto) {
-    return this.staffService.update(updateStaffDto.id, updateStaffDto);
+  async update(@Payload() updateStaffDto: UpdateStaffDto): Promise<IStaffServiceResponse> {
+    return await this.staffService.update(updateStaffDto.id, updateStaffDto);
   }
 
   @MessagePattern('removeStaff')
-  remove(@Payload() id: number) {
-    return this.staffService.remove(id);
+  async remove(@Payload() id: number): Promise<IStaffServiceResponse> {
+    return await this.staffService.remove(id);
   }
 }

@@ -1,26 +1,84 @@
-import { Injectable } from '@nestjs/common';
+import { StaffDto } from './dto/staff.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
+import { Staff } from './entities/staff.entity';
+import { IStaffServiceResponse } from './interfaces/staff-service-response.interface';
 
 @Injectable()
 export class StaffService {
-  create(createStaffDto: CreateStaffDto) {
-    return 'This action adds a new staff';
+  constructor(
+    @InjectRepository(Staff)
+    private staffRepository: Repository<Staff>
+  ) {
   }
 
-  findAll() {
-    return `This action returns all staff`;
+  async create(createStaffDto: CreateStaffDto): Promise<IStaffServiceResponse> {
+    const { data, merchantId } = createStaffDto;
+    const { username, password, fullName, IDNumber, dateOfBirth, phone } = data;
+
+    const staffWithThisUsername = await this.staffRepository.findOne({
+      username,
+      merchantId
+    });
+
+    if (staffWithThisUsername) {
+      return {
+        status: HttpStatus.CONFLICT,
+        message: 'Staff\'s username already exists',
+        data: null
+      }
+    }
+
+    const newUser = this.staffRepository.create({
+      username, password, fullName, IDNumber, dateOfBirth, phone, merchantId
+    });
+    await this.staffRepository.save(newUser);
+
+    return {
+      status: HttpStatus.CREATED,
+      message: 'Staff created successfully',
+      data: {
+        staff: StaffDto.EntityToDTO(newUser)
+      }
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} staff`;
+  async findAll(): Promise<IStaffServiceResponse> {
+    return {
+      status: HttpStatus.CREATED,
+      message: 'User created successfully',
+      // user: MerchantDto.EntityToDTO(newUser),
+      data: null
+    };
   }
 
-  update(id: number, updateStaffDto: UpdateStaffDto) {
-    return `This action updates a #${id} staff`;
+  async findOne(id: number): Promise<IStaffServiceResponse> {
+    return {
+      status: HttpStatus.CREATED,
+      message: 'User created successfully',
+      // user: MerchantDto.EntityToDTO(newUser),
+      data: null
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} staff`;
+  async update(id: number, updateStaffDto: UpdateStaffDto): Promise<IStaffServiceResponse> {
+    return {
+      status: HttpStatus.CREATED,
+      message: 'User created successfully',
+      // user: MerchantDto.EntityToDTO(newUser),
+      data: null
+    };
+  }
+
+  async remove(id: number): Promise<IStaffServiceResponse> {
+    return {
+      status: HttpStatus.CREATED,
+      message: 'User created successfully',
+      // user: MerchantDto.EntityToDTO(newUser),
+      data: null
+    };
   }
 }

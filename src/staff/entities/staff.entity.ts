@@ -7,8 +7,11 @@ export class Staff {
   id: string;
 
   @ManyToOne(() => Merchant, (merchant) => merchant.staffs)
-  // @JoinColumn()
+  @JoinColumn({ name: 'merchantId' })
   merchant: Merchant;
+
+  @Column()
+  merchantId: string;;
 
   @Column({ nullable: false })
   username: string;
