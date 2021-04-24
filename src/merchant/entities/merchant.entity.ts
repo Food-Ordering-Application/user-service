@@ -1,6 +1,7 @@
 import { hash } from "../../shared/helper";
 import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { RestaurantProfile } from "./restaurant-profile.entity";
+import { Staff } from "src/staff/entities/staff.entity";
 
 @Entity()
 export class Merchant {
@@ -37,6 +38,8 @@ export class Merchant {
   @OneToMany(() => RestaurantProfile, (restaurantProfile) => restaurantProfile.merchantId)
   profiles: RestaurantProfile[];
 
+  @OneToMany(() => Staff, (staff) => staff.merchant)
+  staffs: Staff[];
 
   private beforeUpdatePassword: string;
   @AfterLoad()
