@@ -6,16 +6,20 @@ export class StaffDto {
   merchantId: string;;
   username: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   IDNumber: string;
   dateOfBirth: Date;
   static EntityToDTO(staff: Staff): StaffDto {
-    const { id, merchantId, username, fullName, phone, IDNumber, dateOfBirth } = staff;
+    const { id, merchantId, username, firstName, lastName, phone, IDNumber, dateOfBirth } = staff;
     return {
       id,
       merchantId,
       username,
-      fullName,
+      firstName,
+      lastName,
+      fullName: `${lastName} ${firstName}`,
       phone,
       IDNumber,
       dateOfBirth

@@ -17,7 +17,7 @@ export class StaffService {
 
   async create(createStaffDto: CreateStaffDto): Promise<IStaffServiceResponse> {
     const { data, merchantId } = createStaffDto;
-    const { username, password, fullName, IDNumber, dateOfBirth, phone } = data;
+    const { username, password, firstName, lastName, IDNumber, dateOfBirth, phone } = data;
 
     const staffWithThisUsername = await this.staffRepository.findOne({
       username,
@@ -33,7 +33,7 @@ export class StaffService {
     }
 
     const newUser = this.staffRepository.create({
-      username, password, fullName, IDNumber, dateOfBirth, phone, merchantId
+      username, password, firstName, lastName, IDNumber, dateOfBirth, phone, merchantId
     });
     await this.staffRepository.save(newUser);
 

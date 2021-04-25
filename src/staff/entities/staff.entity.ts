@@ -20,7 +20,10 @@ export class Staff {
   password: string;
 
   @Column({ nullable: false })
-  fullName: string;
+  firstName: string;
+
+  @Column({ nullable: false })
+  lastName: string;
 
   @Column({ nullable: true })
   phone: string;

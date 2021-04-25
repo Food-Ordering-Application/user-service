@@ -1,7 +1,8 @@
 export class StaffDataDto {
   username: string;
   password: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   IDNumber: string;
   dateOfBirth: Date;
