@@ -1,6 +1,6 @@
+import { Merchant } from '../../merchant/entities/merchant.entity';
 import { hash } from "../../shared/helper";
 import { AfterLoad, BeforeInsert, BeforeUpdate, Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Merchant } from "src/merchant/entities/merchant.entity";
 @Entity()
 export class Staff {
   @PrimaryGeneratedColumn('uuid')

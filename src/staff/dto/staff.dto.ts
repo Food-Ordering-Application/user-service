@@ -1,5 +1,5 @@
-import { Staff } from 'src/staff/entities/staff.entity';
 import { Entity } from "typeorm";
+import { Staff } from "../entities/staff.entity";
 @Entity()
 export class StaffDto {
   id: string;

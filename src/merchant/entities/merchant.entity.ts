@@ -1,7 +1,7 @@
+import { Staff } from './../../staff/entities/staff.entity';
 import { hash } from "../../shared/helper";
 import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { RestaurantProfile } from "./restaurant-profile.entity";
-import { Staff } from "src/staff/entities/staff.entity";
 
 @Entity()
 export class Merchant {
