@@ -1,10 +1,13 @@
-import { StaffDto } from './dto/staff.dto';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { FetchStaffDto } from './dto/fetch-staff.dto';
+import { StaffDto } from './dto/staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { Staff } from './entities/staff.entity';
+import { IStaffServiceCreateStaffResponse } from './interfaces/staff-service-create-staff-response.interface';
+import { IStaffServiceFetchStaffResponse } from './interfaces/staff-service-fetch-staff-response.interface';
 import { IStaffServiceResponse } from './interfaces/staff-service-response.interface';
 
 @Injectable()
@@ -15,7 +18,7 @@ export class StaffService {
   ) {
   }
 
-  async create(createStaffDto: CreateStaffDto): Promise<IStaffServiceResponse> {
+  async create(createStaffDto: CreateStaffDto): Promise<IStaffServiceCreateStaffResponse> {
     const { data, merchantId } = createStaffDto;
     const { username, password, firstName, lastName, IDNumber, dateOfBirth, phone } = data;
 
@@ -46,12 +49,22 @@ export class StaffService {
     };
   }
 
-  async findAll(): Promise<IStaffServiceResponse> {
+  async findAll(fetchStaffDto: FetchStaffDto): Promise<IStaffServiceFetchStaffResponse> {
+    const { merchantId, size, page } = fetchStaffDto;
+    const [results, total] = await this.staffRepository.findAndCount({
+      where: [{ merchantId }],
+      take: size,
+      skip: page * size
+    });
+
     return {
-      status: HttpStatus.CREATED,
-      message: 'User created successfully',
-      // user: MerchantDto.EntityToDTO(newUser),
-      data: null
+      status: HttpStatus.OK,
+      message: 'Fetched staff successfully',
+      data: {
+        results: results.map((staff) => StaffDto.EntityToDTO(staff)),
+        size,
+        total
+      }
     };
   }
 
