@@ -1,14 +1,14 @@
-import { IStaffServiceFetchStaffResponse } from './interfaces/staff-service-fetch-staff-response.interface';
-import { IStaffServiceResponse } from './interfaces/staff-service-response.interface';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
-import { UpdateStaffDto } from './dto/update-staff.dto';
 import { FetchStaffDto } from './dto/fetch-staff.dto';
-import { IStaffServiceCreateStaffResponse } from './interfaces/staff-service-create-staff-response.interface';
 import { LoginStaffDto } from './dto/login-staff.dto';
+import { UpdateStaffDto } from './dto/update-staff.dto';
+import { IStaffServiceCreateStaffResponse } from './interfaces/staff-service-create-staff-response.interface';
+import { IStaffServiceFetchStaffResponse } from './interfaces/staff-service-fetch-staff-response.interface';
 import { IStaffServiceLoginPosResponse } from './interfaces/staff-service-login-pos-response.interface';
+import { IStaffServiceResponse } from './interfaces/staff-service-response.interface';
+import { StaffService } from './staff.service';
 
 @Controller()
 export class StaffController {
@@ -38,7 +38,7 @@ export class StaffController {
 
   @MessagePattern('updateStaff')
   async update(@Payload() updateStaffDto: UpdateStaffDto): Promise<IStaffServiceResponse> {
-    return await this.staffService.update(updateStaffDto.id, updateStaffDto);
+    return await this.staffService.update(updateStaffDto);
   }
 
   @MessagePattern('removeStaff')

@@ -1,18 +1,17 @@
-import { MerchantService } from './../merchant/merchant.service';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { validateHashedPassword } from '../shared/helper';
 import { Repository } from 'typeorm';
+import { validateHashedPassword } from '../shared/helper';
+import { MerchantService } from './../merchant/merchant.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { FetchStaffDto } from './dto/fetch-staff.dto';
 import { StaffDto } from './dto/staff.dto';
-import { UpdateStaffDto } from './dto/update-staff.dto';
+import { UpdatedStaffDataDto, UpdateStaffDto } from './dto/update-staff.dto';
 import { Staff } from './entities/staff.entity';
 import { IStaffServiceCreateStaffResponse } from './interfaces/staff-service-create-staff-response.interface';
 import { IStaffServiceFetchStaffResponse } from './interfaces/staff-service-fetch-staff-response.interface';
 import { IStaffServiceLoginPosResponse } from './interfaces/staff-service-login-pos-response.interface';
 import { IStaffServiceResponse } from './interfaces/staff-service-response.interface';
-
 @Injectable()
 export class StaffService {
   constructor(
@@ -103,12 +102,44 @@ export class StaffService {
     };
   }
 
-  async update(id: number, updateStaffDto: UpdateStaffDto): Promise<IStaffServiceResponse> {
+  async update(updateStaffDto: UpdateStaffDto): Promise<IStaffServiceResponse> {
+    const { data, staffId, restaurantId } = updateStaffDto;
+    // TODO handle valid uuid
+    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(restaurantId);
+    const fetchStaffPromise = this.staffRepository.findOne({ id: staffId });
+
+    const [doesRestaurantExist, staff] = await Promise.all([doesRestaurantExistPromise, fetchStaffPromise]);
+
+    if (!staff) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Staff not found',
+      }
+    }
+
+    if (!doesRestaurantExist) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+      }
+    }
+
+    // remove unwanted field
+    const templateObject: UpdatedStaffDataDto = {
+      firstName: null,
+      lastName: null,
+      phone: null,
+      IDNumber: null,
+      dateOfBirth: null
+    }
+    Object.keys(data).forEach(key => typeof templateObject[key] == 'undefined' ? delete data[key] : {});
+
+    // save to database
+    await this.staffRepository.save({ ...staff, ...data });
+
     return {
-      status: HttpStatus.CREATED,
-      message: 'User created successfully',
-      // user: MerchantDto.EntityToDTO(newUser),
-      data: null
+      status: HttpStatus.OK,
+      message: 'Staff updated successfully',
     };
   }
 
