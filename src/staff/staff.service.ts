@@ -19,12 +19,13 @@ export class StaffService {
   }
 
   async create(createStaffDto: CreateStaffDto): Promise<IStaffServiceCreateStaffResponse> {
-    const { data, merchantId } = createStaffDto;
+    const { data, merchantId, restaurantId } = createStaffDto;
     const { username, password, firstName, lastName, IDNumber, dateOfBirth, phone } = data;
 
     const staffWithThisUsername = await this.staffRepository.findOne({
       username,
-      merchantId
+      merchantId,
+      restaurantId
     });
 
     if (staffWithThisUsername) {
@@ -36,7 +37,7 @@ export class StaffService {
     }
 
     const newUser = this.staffRepository.create({
-      username, password, firstName, lastName, IDNumber, dateOfBirth, phone, merchantId
+      username, password, firstName, lastName, IDNumber, dateOfBirth, phone, merchantId, restaurantId
     });
     await this.staffRepository.save(newUser);
 
@@ -50,9 +51,9 @@ export class StaffService {
   }
 
   async findAll(fetchStaffDto: FetchStaffDto): Promise<IStaffServiceFetchStaffResponse> {
-    const { merchantId, size, page } = fetchStaffDto;
+    const { merchantId, restaurantId, size, page } = fetchStaffDto;
     const [results, total] = await this.staffRepository.findAndCount({
-      where: [{ merchantId }],
+      where: [{ merchantId, restaurantId }],
       take: size,
       skip: page * size
     });
