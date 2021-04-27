@@ -13,7 +13,7 @@ export class Staff {
   @Column()
   merchantId: string;
 
-  @Column()
+  @Column({ nullable: false })
   restaurantId: string;
 
   @Column({ nullable: false })
