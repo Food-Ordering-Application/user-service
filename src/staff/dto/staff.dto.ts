@@ -3,7 +3,8 @@ import { Staff } from "../entities/staff.entity";
 @Entity()
 export class StaffDto {
   id: string;
-  merchantId: string;;
+  merchantId: string;
+  restaurantId: string;
   username: string;
   fullName: string;
   firstName: string;
@@ -12,10 +13,11 @@ export class StaffDto {
   IDNumber: string;
   dateOfBirth: Date;
   static EntityToDTO(staff: Staff): StaffDto {
-    const { id, merchantId, username, firstName, lastName, phone, IDNumber, dateOfBirth } = staff;
+    const { id, merchantId, username, restaurantId, firstName, lastName, phone, IDNumber, dateOfBirth } = staff;
     return {
       id,
       merchantId,
+      restaurantId,
       username,
       firstName,
       lastName,

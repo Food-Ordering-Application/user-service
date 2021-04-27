@@ -11,7 +11,10 @@ export class Staff {
   merchant: Merchant;
 
   @Column()
-  merchantId: string;;
+  merchantId: string;
+
+  @Column()
+  restaurantId: string;
 
   @Column({ nullable: false })
   username: string;
