@@ -121,4 +121,44 @@ export class StaffService {
     };
   }
 
+  async getAuthenticatedStaff(username: string, password: string, restaurantId: string): Promise<IStaffServiceLoginPosResponse> {
+    const isRestaurantVerifiedPromise = this.merchantService.isRestaurantVerified(restaurantId);
+    const staffPromise = this.staffRepository.findOne({
+      username,
+      restaurantId
+    });
+    const [isRestaurantVerified, staff] = await Promise.all([isRestaurantVerifiedPromise, staffPromise]);
+
+    if (!staff) {
+      return {
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Staff\'s username does not exist',
+        user: null,
+      };
+    }
+    if (!isRestaurantVerified) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Restaurant was not verified',
+        user: null,
+      };
+    }
+
+    const isMatch = await validateHashedPassword(password, staff.password);
+    if (!isMatch)
+      return {
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Staff\'s password does not correct',
+        user: null,
+      };
+
+    const { id, firstName, lastName, fullName } = StaffDto.EntityToDTO(staff);
+    return {
+      status: HttpStatus.OK,
+      message: 'Staff information is verified',
+      user: {
+        id, username, firstName, lastName, fullName, restaurantId
+      }
+    };
+  }
 }

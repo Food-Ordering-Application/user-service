@@ -7,6 +7,8 @@ import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { FetchStaffDto } from './dto/fetch-staff.dto';
 import { IStaffServiceCreateStaffResponse } from './interfaces/staff-service-create-staff-response.interface';
+import { LoginStaffDto } from './dto/login-staff.dto';
+import { IStaffServiceLoginPosResponse } from './interfaces/staff-service-login-pos-response.interface';
 
 @Controller()
 export class StaffController {
@@ -21,6 +23,13 @@ export class StaffController {
   async findAll(@Payload() fetchStaffDto: FetchStaffDto): Promise<IStaffServiceFetchStaffResponse> {
     return await this.staffService.findAll(fetchStaffDto);
   }
+
+  @MessagePattern('getAuthenticatedStaff')
+  getAuthenticatedStaff(@Payload() loginStaffDto: LoginStaffDto): Promise<IStaffServiceLoginPosResponse> {
+    const { username, password, restaurantId } = loginStaffDto;
+    return this.staffService.getAuthenticatedStaff(username, password, restaurantId);
+  }
+
 
   @MessagePattern('findOneStaff')
   async findOne(@Payload() id: number): Promise<IStaffServiceResponse> {
