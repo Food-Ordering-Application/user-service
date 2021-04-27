@@ -158,4 +158,27 @@ export class MerchantService {
     }
   }
 
+  public async isRestaurantVerified(restaurantId: string): Promise<boolean> {
+    const restaurantProfile = await this.restaurantProfileRepository.findOne({
+      restaurantId
+    });
+
+    if (!restaurantProfile) {
+      return false;
+    }
+    const { posAppKey } = restaurantProfile;
+    return posAppKey != null;
+  }
+
+  public async doesRestaurantExist(restaurantId: string): Promise<boolean> {
+    const restaurantProfile = await this.restaurantProfileRepository.findOne({
+      restaurantId
+    });
+
+    if (!restaurantProfile) {
+      return false;
+    }
+    return true;
+  }
+
 }
