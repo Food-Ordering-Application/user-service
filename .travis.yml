@@ -15,14 +15,14 @@ before_install:
 
 script:
   - docker build -t $DOCKER_USERNAME/$HEROKU_APP_NAME -f Dockerfile .
-  - docker tag $DOCKER_USERNAME/$HEROKU_APP_NAME registry.heroku.com/$HEROKU_APP_NAME/web
+  - docker tag $DOCKER_USERNAME/$HEROKU_APP_NAME registry.heroku.com/$HEROKU_APP_NAME/worker
 
 deploy:
   provider: script
   script:
     # push to dockerhub & heroku
     docker push $DOCKER_USERNAME/$HEROKU_APP_NAME;
-    docker push registry.heroku.com/$HEROKU_APP_NAME/web;
-    heroku container:release web --app $HEROKU_APP_NAME;
+    docker push registry.heroku.com/$HEROKU_APP_NAME/worker;
+    heroku container:release worker --app $HEROKU_APP_NAME;
   on:
     branch: main
