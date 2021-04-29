@@ -177,16 +177,34 @@ export class MerchantService {
     }
   }
 
-  public async isRestaurantVerified(restaurantId: string): Promise<boolean> {
+  public async isRestaurantAvailable(restaurantId: string): Promise<{ result: boolean, message: string }> {
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
       restaurantId
     });
 
     if (!restaurantProfile) {
-      return false;
+      return {
+        result: false,
+        message: 'Restaurant was not found'
+      };
     }
-    const { posAppKey } = restaurantProfile;
-    return posAppKey != null;
+    const { isBanned, isVerified } = restaurantProfile;
+    if (isBanned) {
+      return {
+        result: false,
+        message: 'Restaurant was banned'
+      };
+    }
+    if (!isVerified) {
+      return {
+        result: false,
+        message: 'Restaurant was not verified'
+      }
+    }
+    return {
+      result: true,
+      message: null
+    };
   }
 
   public async doesRestaurantExist(restaurantId: string): Promise<boolean> {
