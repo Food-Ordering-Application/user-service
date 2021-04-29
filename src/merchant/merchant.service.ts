@@ -1,6 +1,7 @@
+import { RESTAURANT_EVENT } from './../../../restaurant-service/src/constants';
 import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
@@ -12,6 +13,7 @@ import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class MerchantService {
@@ -22,6 +24,8 @@ export class MerchantService {
     private merchantsRepository: Repository<Merchant>,
     @InjectRepository(RestaurantProfile)
     private restaurantProfileRepository: Repository<RestaurantProfile>,
+    @Inject(RESTAURANT_EVENT)
+    private restaurantEventClient: ClientProxy,
   ) { }
 
   async create(createMerchantDto: CreateMerchantDto) {
@@ -113,7 +117,14 @@ export class MerchantService {
         data: null
       };
 
+    restaurantProfile.isVerified = true;
     await this.getVerifiedRestaurantProfile(restaurantProfile);
+
+    this.restaurantEventClient.emit('restaurant_profile_updated', {
+      restaurantId, data: {
+        isVerified: true,
+      }
+    });
 
     return {
       status: HttpStatus.OK,
