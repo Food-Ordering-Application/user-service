@@ -4,7 +4,6 @@ import { CustomerAddress } from '../../customer/entities/customer-address.entity
 import { Customer } from '../../customer/entities/customer.entity';
 
 define(CustomerAddress, (faker: typeof Faker) => {
-  faker.locale = 'vi';
   const id = faker.random.uuid();
   const address = faker.address.streetAddress(true);
   const city = faker.address.city();
