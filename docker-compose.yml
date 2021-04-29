@@ -1,54 +1,14 @@
 version: '3.7'
 
 services:
-  main:
-    container_name: main
+  user-service:
+    container_name: user-service
     build:
       context: .
       target: development
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
-    ports:
-      - ${SERVER_PORT}:${SERVER_PORT}
-      - 9229:9229
-    command: npm run start:debug
+    command: npm run start:dev
     env_file:
       - .env
-    networks:
-      - webnet
-    depends_on:
-      - rabbitmq
-      - userservice
-      - restaurantservice
-    #PGAdmin
-  pgadmin:
-    container_name: pgadmin
-    image: dpage/pgadmin4
-    restart: always
-    ports:
-      - '7999:80'
-    # volumes:
-    #   - dataPgAdmin:/root/.pgadmin
-    env_file:
-      - ./env/docker.env
-
-  #RabbitMQ
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: 'rabbitmq'
-    tty: true
-    restart: always
-    env_file:
-      - ./docker.env
-    ports:
-      - 5672:5672
-      - 15672:15672
-    volumes:
-      - dataRabbitMQ:/var/lib/rabbitmq/
-      - logRabbitMQ:/var/log/rabbitmq
-
-networks:
-  webnet:
-volumes:
-  pgdata:
