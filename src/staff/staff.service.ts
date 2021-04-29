@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { MerchantService } from './../merchant/merchant.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { DeleteStaffDto } from './dto/delete-staff.dto';
 import { FetchStaffDto } from './dto/fetch-staff.dto';
 import { StaffDto } from './dto/staff.dto';
 import { UpdatedStaffDataDto, UpdateStaffDto } from './dto/update-staff.dto';
@@ -143,12 +144,35 @@ export class StaffService {
     };
   }
 
-  async remove(id: number): Promise<IStaffServiceResponse> {
+
+  async delete(deleteStaffDto: DeleteStaffDto): Promise<IStaffServiceResponse> {
+    const { staffId, restaurantId } = deleteStaffDto;
+    // TODO handle valid uuid
+    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(restaurantId);
+    const fetchStaffPromise = this.staffRepository.findOne({ id: staffId });
+
+    const [doesRestaurantExist, staff] = await Promise.all([doesRestaurantExistPromise, fetchStaffPromise]);
+
+    if (!staff) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Staff not found',
+      }
+    }
+
+    if (!doesRestaurantExist) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+      }
+    }
+
+    // shallow delete to database
+    await this.staffRepository.softDelete({ id: staffId });
+
     return {
-      status: HttpStatus.CREATED,
-      message: 'User created successfully',
-      // user: MerchantDto.EntityToDTO(newUser),
-      data: null
+      status: HttpStatus.OK,
+      message: 'Staff deleted successfully',
     };
   }
 

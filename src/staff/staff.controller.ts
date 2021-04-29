@@ -1,6 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { DeleteStaffDto } from './dto/delete-staff.dto';
 import { FetchStaffDto } from './dto/fetch-staff.dto';
 import { LoginStaffDto } from './dto/login-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
@@ -41,8 +42,8 @@ export class StaffController {
     return await this.staffService.update(updateStaffDto);
   }
 
-  @MessagePattern('removeStaff')
-  async remove(@Payload() id: number): Promise<IStaffServiceResponse> {
-    return await this.staffService.remove(id);
+  @MessagePattern('deleteStaff')
+  async delete(@Payload() deleteStaffDto: DeleteStaffDto): Promise<IStaffServiceResponse> {
+    return await this.staffService.delete(deleteStaffDto);
   }
 }
