@@ -1,12 +1,12 @@
-import { RESTAURANT_EVENT } from './../../../restaurant-service/src/constants';
-import { RestaurantProfile } from './entities/restaurant-profile.entity';
-import { Merchant } from './entities/merchant.entity';
 import { Module } from '@nestjs/common';
-import { MerchantService } from './merchant.service';
-import { MerchantController } from './merchant.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { RESTAURANT_EVENT } from './../constants';
+import { Merchant } from './entities/merchant.entity';
+import { RestaurantProfile } from './entities/restaurant-profile.entity';
+import { MerchantController } from './merchant.controller';
+import { MerchantService } from './merchant.service';
 
 @Module({
   imports: [
