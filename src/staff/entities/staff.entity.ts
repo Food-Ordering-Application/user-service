@@ -1,45 +1,47 @@
-import { Staff } from './../../staff/entities/staff.entity';
+import { Merchant } from '../../merchant/entities/merchant.entity';
 import { hash } from "../../shared/helper";
-import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { RestaurantProfile } from "./restaurant-profile.entity";
-
+import { AfterLoad, BeforeInsert, BeforeUpdate, Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 @Entity()
-export class Merchant {
+export class Staff {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ nullable: false, unique: true })
+  @ManyToOne(() => Merchant, (merchant) => merchant.staffs)
+  @JoinColumn({ name: 'merchantId' })
+  merchant: Merchant;
+
+  @Column()
+  merchantId: string;
+
+  @Column({ nullable: false })
+  restaurantId: string;
+
+  @Column({ nullable: false })
   username: string;
 
   @Column({ nullable: false })
   password: string;
 
   @Column({ nullable: false })
-  email: string;
+  firstName: string;
 
   @Column({ nullable: false })
-  phone: string;
-
-  @Column({ nullable: false })
-  fullName: string;
-
-  @Column({ nullable: false })
-  IDNumber: string;
+  lastName: string;
 
   @Column({ nullable: true })
-  verificationCode: string;
+  phone: string;
 
-  @Column({ default: false })
-  isVerified: boolean;
+  @Column({ nullable: true })
+  IDNumber: string;
 
-  @Column({ default: false })
-  isBanned: boolean;
+  @Column({
+    type: 'date',
+    nullable: true
+  })
+  dateOfBirth: Date;
 
-  @OneToMany(() => RestaurantProfile, (restaurantProfile) => restaurantProfile.merchantId)
-  profiles: RestaurantProfile[];
-
-  @OneToMany(() => Staff, (staff) => staff.merchant)
-  staffs: Staff[];
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   private beforeUpdatePassword: string;
   @AfterLoad()

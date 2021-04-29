@@ -4,8 +4,7 @@ import { Customer } from '../../customer/entities/customer.entity';
 
 define(Customer, (faker: typeof Faker) => {
   const id = faker.random.uuid();
-  const password =
-    '$2y$12$sddMvwPsUtJpyApLotRmxe2QUQvB3o8sft.l8W4zzUU6UCBqu4ham';
+  const password = '123456';
   const phoneNumber = faker.phone.phoneNumber('0#########');
   const avatar = faker.image.avatar();
   const gender = 'Male';

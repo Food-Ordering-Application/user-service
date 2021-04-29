@@ -7,6 +7,7 @@ import { CustomerModule } from './customer/customer.module';
 import { AdminModule } from './admin/admin.module';
 import { MerchantModule } from './merchant/merchant.module';
 import { DeliverModule } from './deliver/deliver.module';
+import { StaffModule } from './staff/staff.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -26,6 +27,7 @@ import * as Joi from 'joi';
     AdminModule,
     MerchantModule,
     DeliverModule,
+    StaffModule,
   ],
   controllers: [AppController],
   providers: [AppService],

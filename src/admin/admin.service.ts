@@ -1,26 +1,41 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAdminDto } from './dto/create-admin.dto';
-import { UpdateAdminDto } from './dto/update-admin.dto';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { validateHashedPassword } from '../shared/helper';
+import { Repository } from 'typeorm';
+import { Admin } from './entities/admin.entity';
+import { AdminDto } from './dto/admin.dto';
 
 @Injectable()
 export class AdminService {
-  create(createAdminDto: CreateAdminDto) {
-    return 'This action adds a new admin';
-  }
 
-  findAll() {
-    return `This action returns all admin`;
-  }
+  constructor(
+    @InjectRepository(Admin)
+    private adminsRepository: Repository<Admin>,
+  ) { }
 
-  findOne(id: number) {
-    return `This action returns a #${id} admin`;
-  }
 
-  update(id: number, updateAdminDto: UpdateAdminDto) {
-    return `This action updates a #${id} admin`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} admin`;
+  async getAuthenticatedAdmin(username: string, password: string) {
+    const admin = await this.adminsRepository.findOne({
+      username
+    });
+    if (!admin) {
+      return {
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Admin\'s username does not exist',
+        user: null,
+      };
+    }
+    const isMatch = await validateHashedPassword(password, admin.password);
+    if (!isMatch)
+      return {
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Admin\'s password does not correct',
+        user: null,
+      };
+    return {
+      status: HttpStatus.OK,
+      message: 'Admin information is verified',
+      user: AdminDto.EntityToDTO(admin),
+    };
   }
 }
