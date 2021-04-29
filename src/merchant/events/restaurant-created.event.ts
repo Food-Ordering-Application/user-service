@@ -5,6 +5,7 @@ export class RestaurantCreatedEventPayload {
     name: string;
     phone: string;
     area: string;
+    city: string;
     address: string;
     isActive: boolean;
     isVerified: boolean;

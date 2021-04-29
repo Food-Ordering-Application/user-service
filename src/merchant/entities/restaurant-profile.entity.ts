@@ -30,6 +30,9 @@ export class RestaurantProfile {
   area: string;
 
   @Column({ nullable: false })
+  city: string;
+
+  @Column({ nullable: false })
   address: string;
 
   @Generated('increment')

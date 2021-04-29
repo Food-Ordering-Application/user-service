@@ -1,19 +1,18 @@
-import { RESTAURANT_EVENT } from './../../../restaurant-service/src/constants';
-import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
-
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
+import { RESTAURANT_EVENT } from './../constants';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { MerchantDto } from './dto/merchant.dto';
+import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
-import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
-import { ClientProxy } from '@nestjs/microservices';
+import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 
 @Injectable()
 export class MerchantService {
@@ -97,13 +96,14 @@ export class MerchantService {
 
   async handleRestaurantCreated(payload: RestaurantCreatedEventPayload) {
     const { merchantId, restaurantId, data } = payload;
-    const { name, phone, area, address, isActive, isBanned, isVerified } = data;
+    const { name, phone, area, city, address, isActive, isBanned, isVerified } = data;
     const restaurantProfile = this.restaurantProfileRepository.create({
       restaurantId,
       merchantId,
       name,
       phone,
       area,
+      city,
       address,
       isActive,
       isBanned,
