@@ -35,6 +35,7 @@ export class RestaurantProfile {
   @Column({ nullable: false })
   address: string;
 
+  @Column({ nullable: false })
   @Generated('increment')
   contractId: number;
 
