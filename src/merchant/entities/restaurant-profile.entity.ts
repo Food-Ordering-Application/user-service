@@ -1,5 +1,5 @@
 import { hash } from "../../shared/helper";
-import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, Generated, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Merchant } from "./merchant.entity";
 
 @Entity()
@@ -19,4 +19,28 @@ export class RestaurantProfile {
 
   @Column({ nullable: true, unique: true, default: null })
   posAppKey: string;
+
+  @Column({ nullable: false })
+  name: string;
+
+  @Column({ nullable: false })
+  phone: string;
+
+  @Column({ nullable: false })
+  area: string;
+
+  @Column({ nullable: false })
+  address: string;
+
+  @Generated('increment')
+  contractId: number;
+
+  @Column()
+  isActive: boolean;
+
+  @Column()
+  isVerified: boolean;
+
+  @Column()
+  isBanned: boolean;
 }
