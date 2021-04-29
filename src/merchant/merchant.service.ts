@@ -95,11 +95,19 @@ export class MerchantService {
     };
   }
 
-  async handleRestaurantCreated(data: RestaurantCreatedEventPayload) {
-    const { merchantId, restaurantId } = data;
+  async handleRestaurantCreated(payload: RestaurantCreatedEventPayload) {
+    const { merchantId, restaurantId, data } = payload;
+    const { name, phone, area, address, isActive, isBanned, isVerified } = data;
     const restaurantProfile = this.restaurantProfileRepository.create({
       restaurantId,
-      merchantId
+      merchantId,
+      name,
+      phone,
+      area,
+      address,
+      isActive,
+      isBanned,
+      isVerified
     });
     await this.restaurantProfileRepository.save(restaurantProfile);
   }
