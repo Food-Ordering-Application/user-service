@@ -174,7 +174,7 @@ export class MerchantService {
   }
 
   private async getVerifiedRestaurantProfile(restaurantProfile: RestaurantProfile) {
-    restaurantProfile.posAppKey = randomBytes(20).toString('hex').toUpperCase();
+    restaurantProfile.posAppKey = randomBytes(6).toString('hex').toUpperCase();
     try {
       await this.restaurantProfileRepository.save(restaurantProfile)
     }
