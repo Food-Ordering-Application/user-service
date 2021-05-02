@@ -30,7 +30,7 @@ export class MerchantController {
     return await this.merchantService.findMerchantById(id);
   }
 
-  @EventPattern('restaurant_created')
+  @EventPattern({ event: 'restaurant_created' })
   async handleRestaurantCreated(data: RestaurantCreatedEventPayload) {
     return await this.merchantService.handleRestaurantCreated(data);
   }

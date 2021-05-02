@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
-import { RESTAURANT_EVENT } from './../constants';
+import { RESTAURANT_SERVICE } from './../constants';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { MerchantDto } from './dto/merchant.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
@@ -12,6 +12,7 @@ import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
+import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
 import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 
 @Injectable()
@@ -23,8 +24,8 @@ export class MerchantService {
     private merchantsRepository: Repository<Merchant>,
     @InjectRepository(RestaurantProfile)
     private restaurantProfileRepository: Repository<RestaurantProfile>,
-    @Inject(RESTAURANT_EVENT)
-    private restaurantEventClient: ClientProxy,
+    @Inject(RESTAURANT_SERVICE)
+    private restaurantServiceClient: ClientProxy,
   ) { }
 
   async create(createMerchantDto: CreateMerchantDto) {
@@ -128,11 +129,13 @@ export class MerchantService {
     restaurantProfile.isVerified = true;
     await this.getVerifiedRestaurantProfile(restaurantProfile);
 
-    this.restaurantEventClient.emit('restaurant_profile_updated', {
-      restaurantId, data: {
+    const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
+      restaurantId,
+      data: {
         isVerified: true,
       }
-    });
+    };
+    this.restaurantServiceClient.emit({ event: 'restaurant_profile_updated' }, restaurantProfileUpdatedEventPayload);
 
     return {
       status: HttpStatus.OK,
