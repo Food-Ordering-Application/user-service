@@ -1,3 +1,4 @@
+import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +7,7 @@ import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { RESTAURANT_SERVICE } from './../constants';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
+import { FetchRestaurantsOfMerchantDto } from './dto/fetch-restaurants-of-merchant.dto';
 import { MerchantDto } from './dto/merchant.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
@@ -13,6 +15,7 @@ import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
+import { IMerchantServiceFetchRestaurantsOfMerchantResponse } from './interfaces/merchant-service-fetch-restaurants-of-merchant-response.interface';
 import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 
 @Injectable()
@@ -221,4 +224,23 @@ export class MerchantService {
     return true;
   }
 
+  async fetchRestaurantsOfMerchant(fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
+    const { merchantId, size, page } = fetchRestaurantsOfMerchantDto;
+
+    const [results, total] = await this.restaurantProfileRepository.findAndCount({
+      where: [{ merchantId }],
+      take: size,
+      skip: page * size
+    });
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Fetched restaurants successfully',
+      data: {
+        results: results.map((staff) => RestaurantProfileDto.EntityToDTO(staff)),
+        size,
+        total
+      }
+    };
+  }
 }
