@@ -39,6 +39,9 @@ export class RestaurantProfile {
   @Generated('increment')
   contractId: number;
 
+  @Column({ default: null })
+  deviceId: string;
+
   @Column()
   isActive: boolean;
 

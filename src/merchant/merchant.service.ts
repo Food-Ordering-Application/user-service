@@ -150,9 +150,9 @@ export class MerchantService {
   }
 
   async verifyPosAppKey(verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
-    const { posAppKey } = verifyPosAppKeyDto;
+    const { posAppKey, deviceId } = verifyPosAppKeyDto;
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
-      posAppKey
+      posAppKey,
     });
 
     if (!restaurantProfile)
@@ -162,6 +162,15 @@ export class MerchantService {
         data: null
       };
 
+    if (restaurantProfile.deviceId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Restaurant already used the code',
+        data: null
+      };
+    }
+
+    await this.restaurantProfileRepository.update(restaurantProfile, { deviceId });
     const { merchantId, restaurantId } = restaurantProfile;
     return {
       status: HttpStatus.OK,
@@ -174,7 +183,8 @@ export class MerchantService {
   }
 
   private async getVerifiedRestaurantProfile(restaurantProfile: RestaurantProfile) {
-    restaurantProfile.posAppKey = randomBytes(6).toString('hex').toUpperCase();
+    const getRandom = () => randomBytes(2).toString('hex').toUpperCase();
+    restaurantProfile.posAppKey = `${getRandom()}-${getRandom()}-${getRandom()}`;
     try {
       await this.restaurantProfileRepository.save(restaurantProfile)
     }
