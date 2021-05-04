@@ -1,4 +1,3 @@
-import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +8,7 @@ import { RESTAURANT_SERVICE } from './../constants';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { FetchRestaurantsOfMerchantDto } from './dto/fetch-restaurants-of-merchant.dto';
 import { MerchantDto } from './dto/merchant.dto';
+import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { Merchant } from './entities/merchant.entity';
@@ -234,6 +234,11 @@ export class MerchantService {
     return true;
   }
 
+  public async doesMerchantExist(merchantId: string): Promise<boolean> {
+    const count = await this.merchantsRepository.count({ where: { id: merchantId } });
+    return count > 0;
+  }
+
   async fetchRestaurantsOfMerchant(fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
     const { merchantId, size, page } = fetchRestaurantsOfMerchantDto;
 
@@ -252,5 +257,10 @@ export class MerchantService {
         total
       }
     };
+  }
+
+  async validateMerchantId(merchantId: string): Promise<boolean> {
+    const doesExist = await this.doesMerchantExist(merchantId);
+    return doesExist;
   }
 }

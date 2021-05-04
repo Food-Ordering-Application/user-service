@@ -49,4 +49,9 @@ export class MerchantController {
   async verifyPosAppKey(@Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyPosAppKey(verifyPosAppKeyDto);
   }
+
+  @MessagePattern('validateMerchantId')
+  async verifyMerchant(@Payload() merchantId: string): Promise<boolean> {
+    return await this.merchantService.validateMerchantId(merchantId);
+  }
 }
