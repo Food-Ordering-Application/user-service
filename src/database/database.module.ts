@@ -17,14 +17,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         entities: [__dirname + '/../**/*.entity.{js,ts}'],
         migrations: [__dirname + '/../**/*.migration.{js,ts}'],
         synchronize: true,
-        seeds: [__dirname + '/seeders/**/*{.ts,.js}'],
-        factories: [__dirname + '/factories/**/*{.ts,.js}'],
-         ssl: true,
-         extra: {
-           ssl: {
-             rejectUnauthorized: false,
-           },
-         },
+        seeds: [__dirname + '/seeders/**/*.seed{.ts,.js}'],
+        factories: [__dirname + '/factories/**/*.factory{.ts,.js}'],
+        ssl: true,
+        extra: {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        },
       }),
     }),
   ],
