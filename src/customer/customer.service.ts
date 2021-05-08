@@ -3,12 +3,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { Customer } from './entities/customer.entity';
-
-import * as bcrypt from 'bcrypt';
 import { ICustomerResponse } from './interfaces/customer-response.interface';
 import { SendPhoneNumberOTPVerifyDto } from './dto/send-otp-verify-customer.dto';
 import { ICustomerSendOTPVerifyResponse } from './interfaces/customer-send-otp-verify.interface';
 import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number.dto';
+import {
+  CreateCustomerAddressDto,
+  DeleteCustomerAddressDto,
+  GetListCustomerAddressDto,
+  UpdateCustomerAddressDto,
+} from './dto';
+import {
+  ICustomerAddressesResponse,
+  ICustomerAddressResponse,
+} from './interfaces';
+import { CustomerAddress } from './entities';
 
 @Injectable()
 export class CustomerService {
@@ -16,8 +25,10 @@ export class CustomerService {
 
   constructor(
     @InjectRepository(Customer)
-    private customersRepository: Repository<Customer>,
-  ) { }
+    private customerRepository: Repository<Customer>,
+    @InjectRepository(CustomerAddress)
+    private customerAddressRepository: Repository<CustomerAddress>,
+  ) {}
 
   async create(
     createCustomerDto: CreateCustomerDto,
@@ -26,7 +37,7 @@ export class CustomerService {
 
     // Tìm xem PhoneNumber có tồn tại hay chưa
     try {
-      const customer = await this.customersRepository.findOne({
+      const customer = await this.customerRepository.findOne({
         phoneNumber: createCustomerDto.phoneNumber,
       });
       // Nếu người dùng đã tồn tại
@@ -43,7 +54,7 @@ export class CustomerService {
         newCustomer.phoneNumber = createCustomerDto.phoneNumber;
         newCustomer.password = createCustomerDto.password;
 
-        await this.customersRepository.save(newCustomer);
+        await this.customerRepository.save(newCustomer);
         delete newCustomer.password;
         result = {
           status: HttpStatus.CREATED,
@@ -66,7 +77,7 @@ export class CustomerService {
     phoneNumber: string,
   ): Promise<ICustomerResponse> {
     try {
-      const customer = await this.customersRepository.findOne({
+      const customer = await this.customerRepository.findOne({
         phoneNumber: phoneNumber,
       });
       return {
@@ -86,7 +97,7 @@ export class CustomerService {
 
   async findCustomerById(id: string): Promise<ICustomerResponse> {
     try {
-      const customer = await this.customersRepository.findOne({
+      const customer = await this.customerRepository.findOne({
         id,
       });
       delete customer.password;
@@ -112,11 +123,11 @@ export class CustomerService {
     this.logger.log(otp);
     try {
       // Tìm ra user lưu lại otp
-      const customer = await this.customersRepository.findOne({
+      const customer = await this.customerRepository.findOne({
         phoneNumber: sendPhoneNumberOTPVerifyDto.phoneNumber,
       });
       customer.verifyPhoneNumberOTP = otp;
-      this.customersRepository.save(customer);
+      this.customerRepository.save(customer);
       return {
         status: HttpStatus.OK,
         message: 'Otp sent successfully',
@@ -135,14 +146,14 @@ export class CustomerService {
   ): Promise<ICustomerSendOTPVerifyResponse> {
     try {
       // Tìm ra customer dựa trên phoneNumber
-      const customer = await this.customersRepository.findOne({
+      const customer = await this.customerRepository.findOne({
         phoneNumber: verifyCustomerPhoneNumberDto.phoneNumber,
       });
       // Xét xem otp có khớp không
       if (customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp) {
         customer.verifyPhoneNumberOTP = null;
         customer.isPhoneNumberVerified = true;
-        this.customersRepository.save(customer);
+        this.customerRepository.save(customer);
         return {
           status: HttpStatus.OK,
           message: 'Verify customer phoneNumber successfully',
@@ -157,6 +168,146 @@ export class CustomerService {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
+      };
+    }
+  }
+
+  async createCustomerAddress(
+    createCustomerAddressDto: CreateCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    try {
+      const {
+        address,
+        customerId,
+        latitude,
+        longtitude,
+      } = createCustomerAddressDto;
+
+      // Tìm ra customer với customerId
+      const customer = await this.customerRepository.findOne(
+        {
+          id: customerId,
+        },
+        { select: ['id'] },
+      );
+
+      // Tạo address và lưu
+      const customerAddress = new CustomerAddress();
+      customerAddress.address = address;
+      customerAddress.geom = {
+        type: 'Point',
+        coordinates: [longtitude, latitude],
+      };
+      customerAddress.customer = customer;
+      await this.customerAddressRepository.save(customerAddress);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Customer address save successfully',
+        address: customerAddress,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        address: null,
+      };
+    }
+  }
+
+  async updateCustomerAddress(
+    updateCustomerAddressDto: UpdateCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    try {
+      const {
+        address,
+        customerId,
+        latitude,
+        longtitude,
+        customerAddressId,
+      } = updateCustomerAddressDto;
+
+      // Tìm ra customer address và update
+      const customerAddress = await this.customerAddressRepository
+        .createQueryBuilder('cAddress')
+        .where('cAddress.id = :customerAddressId', {
+          customerAddressId: customerAddressId,
+        })
+        .getOne();
+
+      customerAddress.address = address;
+      customerAddress.geom = {
+        type: 'Point',
+        coordinates: [longtitude, latitude],
+      };
+      // Lưu lại customerAddress
+      await this.customerAddressRepository.save(customerAddress);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Customer address update successfully',
+        address: customerAddress,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        address: null,
+      };
+    }
+  }
+
+  async deleteCustomerAddress(
+    deleteCustomerAddressDto: DeleteCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    try {
+      const { customerId, customerAddressId } = deleteCustomerAddressDto;
+
+      // Delete customer address
+      await this.customerAddressRepository.delete({ id: customerAddressId });
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Customer address delete successfully',
+        address: null,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        address: null,
+      };
+    }
+  }
+
+  async getListCustomerAddress(
+    getListCustomerAddressDto: GetListCustomerAddressDto,
+  ): Promise<ICustomerAddressesResponse> {
+    try {
+      const { customerId } = getListCustomerAddressDto;
+
+      const adddresses = await this.customerAddressRepository
+        .createQueryBuilder('cAddress')
+        .leftJoin('cAddress.customer', 'customer')
+        .where('customer.id = :customerId', {
+          customerId: customerId,
+        })
+        .getMany();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Customer addresses fetched successfully',
+        addresses: adddresses,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        addresses: null,
       };
     }
   }

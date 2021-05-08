@@ -13,7 +13,7 @@ export class CustomerAddress {
   address: string;
 
   @Column({ default: 'TPHCM' })
-  city: string
+  city: string;
 
   @Column({ default: 'TPHCM' })
   area: string;

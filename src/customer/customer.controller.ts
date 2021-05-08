@@ -1,11 +1,21 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CustomerService } from './customer.service';
-import { CreateCustomerDto } from './dto/create-customer.dto';
-import { SendPhoneNumberOTPVerifyDto } from './dto/send-otp-verify-customer.dto';
-import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number.dto';
-import { ICustomerResponse } from './interfaces/customer-response.interface';
-import { ICustomerSendOTPVerifyResponse } from './interfaces/customer-send-otp-verify.interface';
+import {
+  CreateCustomerAddressDto,
+  CreateCustomerDto,
+  DeleteCustomerAddressDto,
+  GetListCustomerAddressDto,
+  SendPhoneNumberOTPVerifyDto,
+  UpdateCustomerAddressDto,
+  VerifyCustomerPhoneNumberDto,
+} from './dto';
+import {
+  ICustomerAddressesResponse,
+  ICustomerAddressResponse,
+  ICustomerResponse,
+  ICustomerSendOTPVerifyResponse,
+} from './interfaces';
 
 @Controller()
 export class CustomerController {
@@ -50,5 +60,39 @@ export class CustomerController {
   @MessagePattern('findCustomerById')
   findCustomerById(@Payload() customerId: string): Promise<ICustomerResponse> {
     return this.customerService.findCustomerById(customerId);
+  }
+
+  // Tạo địa chỉ cho customer
+  @MessagePattern('createCustomerAddress')
+  createCustomerAddress(
+    @Payload() createCustomerAddressDto: CreateCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    return this.customerService.createCustomerAddress(createCustomerAddressDto);
+  }
+
+  // Update địa chỉ cho customer
+  @MessagePattern('updateCustomerAddress')
+  updateCustomerAddress(
+    @Payload() updateCustomerAddressDto: UpdateCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    return this.customerService.updateCustomerAddress(updateCustomerAddressDto);
+  }
+
+  // Xóa địa chỉ cho customer
+  @MessagePattern('deleteCustomerAddress')
+  deleteCustomerAddress(
+    @Payload() deleteCustomerAddressDto: DeleteCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    return this.customerService.deleteCustomerAddress(deleteCustomerAddressDto);
+  }
+
+  // List địa chỉ cho customer
+  @MessagePattern('getListCustomerAddress')
+  getListCustomerAddress(
+    @Payload() getListCustomerAddressDto: GetListCustomerAddressDto,
+  ): Promise<ICustomerAddressesResponse> {
+    return this.customerService.getListCustomerAddress(
+      getListCustomerAddressDto,
+    );
   }
 }
