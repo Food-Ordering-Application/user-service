@@ -26,6 +26,9 @@ export class RestaurantProfile {
   @Column({ nullable: false })
   phone: string;
 
+  @Column({ nullable: true, default: null })
+  image: string;
+
   @Column({ nullable: false })
   area: string;
 

@@ -7,6 +7,7 @@ export class RestaurantCreatedEventPayload {
     area: string;
     city: string;
     address: string;
+    coverImageUrl: string;
     isActive: boolean;
     isVerified: boolean;
     isBanned: boolean;

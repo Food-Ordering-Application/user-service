@@ -8,14 +8,15 @@ export class RestaurantProfileDto {
   phone: string;
   area: string;
   city: string;
+  image: string;
   address: string;
   contractId: number;
   isActive: boolean;
   isVerified: boolean;
   static EntityToDTO(restaurant: RestaurantProfile): RestaurantProfileDto {
-    const { restaurantId, posAppKey, name, phone, area, city, address, contractId, isActive, isVerified } = restaurant;
+    const { restaurantId, posAppKey, name, phone, image, area, city, address, contractId, isActive, isVerified } = restaurant;
     return {
-      restaurantId, posAppKey, name, phone, area, city, address, contractId, isActive, isVerified
+      restaurantId, posAppKey, name, phone, image, area, city, address, contractId, isActive, isVerified
     };
   }
 }

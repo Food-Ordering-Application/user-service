@@ -100,7 +100,7 @@ export class MerchantService {
 
   async handleRestaurantCreated(payload: RestaurantCreatedEventPayload) {
     const { merchantId, restaurantId, data } = payload;
-    const { name, phone, area, city, address, isActive, isBanned, isVerified } = data;
+    const { name, phone, area, coverImageUrl, city, address, isActive, isBanned, isVerified } = data;
     const restaurantProfile = this.restaurantProfileRepository.create({
       restaurantId,
       merchantId,
@@ -108,6 +108,7 @@ export class MerchantService {
       phone,
       area,
       city,
+      image: coverImageUrl,
       address,
       isActive,
       isBanned,
