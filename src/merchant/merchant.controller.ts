@@ -1,13 +1,14 @@
-import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
-import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
-import { MerchantDto } from './dto/merchant.dto';
 import { Controller } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
+import { FetchRestaurantsOfMerchantDto } from './dto/fetch-restaurants-of-merchant.dto';
 import { LoginMerchantDto } from './dto/login-merchant.dto';
-import { MerchantService } from './merchant.service';
-import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
+import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
+import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
+import { IMerchantServiceFetchRestaurantsOfMerchantResponse } from './interfaces/merchant-service-fetch-restaurants-of-merchant-response.interface';
+import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
+import { MerchantService } from './merchant.service';
 
 @Controller()
 export class MerchantController {
@@ -30,9 +31,14 @@ export class MerchantController {
     return await this.merchantService.findMerchantById(id);
   }
 
-  @EventPattern('restaurant_created')
+  @EventPattern({ event: 'restaurant_created' })
   async handleRestaurantCreated(data: RestaurantCreatedEventPayload) {
     return await this.merchantService.handleRestaurantCreated(data);
+  }
+
+  @MessagePattern('fetchRestaurantsOfMerchant')
+  async fetchRestaurantsOfMerchant(@Payload() fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
+    return await this.merchantService.fetchRestaurantsOfMerchant(fetchRestaurantsOfMerchantDto);
   }
 
   @MessagePattern('verifyRestaurant')
@@ -42,5 +48,10 @@ export class MerchantController {
   @MessagePattern('verifyPosAppKey')
   async verifyPosAppKey(@Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyPosAppKey(verifyPosAppKeyDto);
+  }
+
+  @MessagePattern('validateMerchantId')
+  async verifyMerchant(@Payload() merchantId: string): Promise<boolean> {
+    return await this.merchantService.validateMerchantId(merchantId);
   }
 }

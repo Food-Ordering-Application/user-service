@@ -28,7 +28,7 @@ export class CustomerService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerAddress)
     private customerAddressRepository: Repository<CustomerAddress>,
-  ) {}
+  ) { }
 
   async create(
     createCustomerDto: CreateCustomerDto,
