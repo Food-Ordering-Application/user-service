@@ -19,7 +19,7 @@ import {
 
 @Controller()
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+  constructor(private readonly customerService: CustomerService) { }
   // Đăng ký customer
   @MessagePattern('createCustomer')
   async create(

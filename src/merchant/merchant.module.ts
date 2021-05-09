@@ -1,12 +1,35 @@
-import { RestaurantProfile } from './entities/restaurant-profile.entity';
-import { Merchant } from './entities/merchant.entity';
 import { Module } from '@nestjs/common';
-import { MerchantService } from './merchant.service';
-import { MerchantController } from './merchant.controller';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RESTAURANT_SERVICE } from './../constants';
+import { Merchant } from './entities/merchant.entity';
+import { RestaurantProfile } from './entities/restaurant-profile.entity';
+import { MerchantController } from './merchant.controller';
+import { MerchantService } from './merchant.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Merchant, RestaurantProfile])],
+  imports: [
+    TypeOrmModule.forFeature([Merchant, RestaurantProfile]),
+    ClientsModule.registerAsync([
+      {
+        name: RESTAURANT_SERVICE,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get('AMQP_URL') as string],
+            queue: configService.get('RESTAURANT_AMQP_QUEUE'),
+            queueOptions: {
+              durable: false,
+
+            },
+          },
+        }),
+      }
+    ])
+  ],
   controllers: [MerchantController],
   providers: [MerchantService],
   exports: [MerchantService]

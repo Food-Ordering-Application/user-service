@@ -177,12 +177,12 @@ export class StaffService {
   }
 
   async getAuthenticatedStaff(username: string, password: string, restaurantId: string): Promise<IStaffServiceLoginPosResponse> {
-    const isRestaurantVerifiedPromise = this.merchantService.isRestaurantVerified(restaurantId);
+    const isRestaurantAvailablePromise = this.merchantService.isRestaurantAvailable(restaurantId);
     const staffPromise = this.staffRepository.findOne({
       username,
       restaurantId
     });
-    const [isRestaurantVerified, staff] = await Promise.all([isRestaurantVerifiedPromise, staffPromise]);
+    const [isRestaurantAvailable, staff] = await Promise.all([isRestaurantAvailablePromise, staffPromise]);
 
     if (!staff) {
       return {
@@ -191,10 +191,11 @@ export class StaffService {
         user: null,
       };
     }
-    if (!isRestaurantVerified) {
+    const { result, message } = isRestaurantAvailable;
+    if (!result) {
       return {
         status: HttpStatus.FORBIDDEN,
-        message: 'Restaurant was not verified',
+        message: message,
         user: null,
       };
     }
