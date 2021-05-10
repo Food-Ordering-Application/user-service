@@ -199,7 +199,7 @@ export class CustomerService {
       customerAddress.address = address;
       customerAddress.geom = {
         type: 'Point',
-        coordinates: [longtitude, latitude],
+        coordinates: [latitude, longtitude],
       };
       customerAddress.default =
         customer.customerAddresses.length >= 1 ? false : true;
@@ -245,7 +245,7 @@ export class CustomerService {
       customerAddress.address = address;
       customerAddress.geom = {
         type: 'Point',
-        coordinates: [longtitude, latitude],
+        coordinates: [latitude, longtitude],
       };
       // Lưu lại customerAddress
       await this.customerAddressRepository.save(customerAddress);
