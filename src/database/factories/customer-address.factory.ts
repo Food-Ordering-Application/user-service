@@ -10,10 +10,9 @@ define(CustomerAddress, (faker: typeof Faker) => {
   const area = faker.address.city();
   const latitude = faker.address.latitude();
   const longtitude = faker.address.longitude();
-
   const geom = {
     type: 'Point',
-    coordinates: [parseFloat(longtitude), parseFloat(latitude)],
+    coordinates: [parseFloat(latitude), parseFloat(longtitude)],
   };
 
   const customerAddress = new CustomerAddress();
@@ -23,5 +22,6 @@ define(CustomerAddress, (faker: typeof Faker) => {
   customerAddress.city = city;
   customerAddress.geom = geom;
   customerAddress.customer = factory(Customer)() as any;
+  customerAddress.default = false;
   return customerAddress;
 });

@@ -10,12 +10,15 @@ import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number
 import {
   CreateCustomerAddressDto,
   DeleteCustomerAddressDto,
+  GetDefaultCustomerAddressInfoDto,
   GetListCustomerAddressDto,
   UpdateCustomerAddressDto,
+  UpdateDefaultCustomerAddressDto,
 } from './dto';
 import {
   ICustomerAddressesResponse,
   ICustomerAddressResponse,
+  IGetAddressResponse,
 } from './interfaces';
 import { CustomerAddress } from './entities';
 
@@ -28,7 +31,7 @@ export class CustomerService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerAddress)
     private customerAddressRepository: Repository<CustomerAddress>,
-  ) { }
+  ) {}
 
   async create(
     createCustomerDto: CreateCustomerDto,
@@ -184,12 +187,12 @@ export class CustomerService {
       } = createCustomerAddressDto;
 
       // Tìm ra customer với customerId
-      const customer = await this.customerRepository.findOne(
-        {
-          id: customerId,
-        },
-        { select: ['id'] },
-      );
+      const customer = await this.customerRepository
+        .createQueryBuilder('customer')
+        .select(['customer.id'])
+        .leftJoinAndSelect('customer.customerAddresses', 'cAddress')
+        .where('customer.id = :customerId', { customerId: customerId })
+        .getOne();
 
       // Tạo address và lưu
       const customerAddress = new CustomerAddress();
@@ -198,6 +201,9 @@ export class CustomerService {
         type: 'Point',
         coordinates: [longtitude, latitude],
       };
+      customerAddress.default =
+        customer.customerAddresses.length >= 1 ? false : true;
+      delete customer.customerAddresses;
       customerAddress.customer = customer;
       await this.customerAddressRepository.save(customerAddress);
 
@@ -289,7 +295,7 @@ export class CustomerService {
     try {
       const { customerId } = getListCustomerAddressDto;
 
-      const adddresses = await this.customerAddressRepository
+      const addresses = await this.customerAddressRepository
         .createQueryBuilder('cAddress')
         .leftJoin('cAddress.customer', 'customer')
         .where('customer.id = :customerId', {
@@ -300,7 +306,7 @@ export class CustomerService {
       return {
         status: HttpStatus.OK,
         message: 'Customer addresses fetched successfully',
-        addresses: adddresses,
+        addresses: addresses,
       };
     } catch (error) {
       this.logger.error(error);
@@ -308,6 +314,95 @@ export class CustomerService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         addresses: null,
+      };
+    }
+  }
+
+  async getDefaultCustomerAddressInfo(
+    getDefaultCustomerAddressInfoDto: GetDefaultCustomerAddressInfoDto,
+  ): Promise<IGetAddressResponse> {
+    try {
+      const { customerId } = getDefaultCustomerAddressInfoDto;
+
+      const defaultAddress = await this.customerAddressRepository
+        .createQueryBuilder('cAddress')
+        .leftJoin('cAddress.customer', 'customer')
+        .where('customer.id = :customerId', {
+          customerId: customerId,
+        })
+        .andWhere('cAddress.default = :addressDefault', {
+          addressDefault: true,
+        })
+        .getOne();
+
+      //TODO: Nếu user chưa có address thì trả về null
+      if (!defaultAddress) {
+        return {
+          status: HttpStatus.OK,
+          message: 'Customer has no address',
+          data: {
+            address: null,
+            geom: null,
+          },
+        };
+      }
+      return {
+        status: HttpStatus.OK,
+        message: 'Customer addresses fetched successfully',
+        data: {
+          address: defaultAddress.address,
+          geom: defaultAddress.geom,
+        },
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        data: null,
+      };
+    }
+  }
+
+  async updateDefaultCustomerAddress(
+    updateDefaultCustomerAddressDto: UpdateDefaultCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    try {
+      const { customerId, customerAddressId } = updateDefaultCustomerAddressDto;
+      //TODO: Tìm ra customerAddress có default = true đổi lại thành false
+      const oldDefaultCustomerAddress = await this.customerAddressRepository
+        .createQueryBuilder('cAddress')
+        .leftJoin('cAddress.customer', 'customer')
+        .where('customer.id = :customerId', {
+          customerId: customerId,
+        })
+        .andWhere('cAddress.default = :addressDefault', {
+          addressDefault: true,
+        })
+        .getOne();
+      oldDefaultCustomerAddress.default = false;
+      await this.customerAddressRepository.save(oldDefaultCustomerAddress);
+      //TODO: Update customerAddressId mới thành default
+      const newDefaultCustomerAddress = await this.customerAddressRepository
+        .createQueryBuilder('cAddress')
+        .where('cAddress.id = :customerAddressId', {
+          customerAddressId: customerAddressId,
+        })
+        .getOne();
+      newDefaultCustomerAddress.default = true;
+      await this.customerAddressRepository.save(newDefaultCustomerAddress);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Default customer address updated successfully',
+        address: newDefaultCustomerAddress,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        address: null,
       };
     }
   }

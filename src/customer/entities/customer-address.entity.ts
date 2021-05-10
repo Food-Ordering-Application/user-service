@@ -20,4 +20,7 @@ export class CustomerAddress {
 
   @Column({ type: 'geometry', spatialFeatureType: 'Point', srid: 4326 })
   geom: { type: string; coordinates: number[] };
+
+  @Column({ default: false })
+  default: boolean;
 }

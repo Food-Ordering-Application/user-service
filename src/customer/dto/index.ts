@@ -6,3 +6,5 @@ export { CreateCustomerAddressDto } from './create-customer-address.dto';
 export { UpdateCustomerAddressDto } from './update-customer-address.dto';
 export { DeleteCustomerAddressDto } from './delete-customer-address.dto';
 export { GetListCustomerAddressDto } from './get-list-customer-address.dto';
+export { GetDefaultCustomerAddressInfoDto } from './get-customer-address.dto';
+export { UpdateDefaultCustomerAddressDto } from './update-default-customer-address.dto';

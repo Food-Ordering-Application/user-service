@@ -13,6 +13,8 @@ services:
       - ./development.env
     networks:
       - my-network
+    # command: bash -c "npm run db:setup && npm run start:dev"
+    command: [sh, -c, "cd /usr/src/app && npm run db:setup && npm run start:dev"]
 
 networks:
   my-network:

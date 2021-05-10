@@ -9,17 +9,20 @@ import {
   SendPhoneNumberOTPVerifyDto,
   UpdateCustomerAddressDto,
   VerifyCustomerPhoneNumberDto,
+  GetDefaultCustomerAddressInfoDto,
+  UpdateDefaultCustomerAddressDto,
 } from './dto';
 import {
   ICustomerAddressesResponse,
   ICustomerAddressResponse,
   ICustomerResponse,
   ICustomerSendOTPVerifyResponse,
+  IGetAddressResponse,
 } from './interfaces';
 
 @Controller()
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) { }
+  constructor(private readonly customerService: CustomerService) {}
   // Đăng ký customer
   @MessagePattern('createCustomer')
   async create(
@@ -93,6 +96,28 @@ export class CustomerController {
   ): Promise<ICustomerAddressesResponse> {
     return this.customerService.getListCustomerAddress(
       getListCustomerAddressDto,
+    );
+  }
+
+  // Lấy địa chỉ default của customer
+  @MessagePattern('getDefaultCustomerAddressInfo')
+  getDefaultCustomerAddressInfo(
+    @Payload()
+    getDefaultCustomerAddressInfoDto: GetDefaultCustomerAddressInfoDto,
+  ): Promise<IGetAddressResponse> {
+    return this.customerService.getDefaultCustomerAddressInfo(
+      getDefaultCustomerAddressInfoDto,
+    );
+  }
+
+  // Update địa chỉ default của customer
+  @MessagePattern('updateDefaultCustomerAddress')
+  updateDefaultCustomerAddress(
+    @Payload()
+    updateDefaultCustomerAddressDto: UpdateDefaultCustomerAddressDto,
+  ): Promise<ICustomerAddressResponse> {
+    return this.customerService.updateDefaultCustomerAddress(
+      updateDefaultCustomerAddressDto,
     );
   }
 }
