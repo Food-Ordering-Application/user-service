@@ -18,40 +18,62 @@ export class StaffService {
   constructor(
     @InjectRepository(Staff)
     private staffRepository: Repository<Staff>,
-    private merchantService: MerchantService
-  ) {
-  }
+    private merchantService: MerchantService,
+  ) {}
 
-  async create(createStaffDto: CreateStaffDto): Promise<IStaffServiceCreateStaffResponse> {
+  async create(
+    createStaffDto: CreateStaffDto,
+  ): Promise<IStaffServiceCreateStaffResponse> {
     const { data, merchantId, restaurantId } = createStaffDto;
-    const { username, password, firstName, lastName, IDNumber, dateOfBirth, phone } = data;
+    const {
+      username,
+      password,
+      firstName,
+      lastName,
+      IDNumber,
+      dateOfBirth,
+      phone,
+    } = data;
 
-    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(restaurantId);
+    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(
+      restaurantId,
+    );
     const staffWithThisUsernamePromise = this.staffRepository.findOne({
       username,
       merchantId,
-      restaurantId
+      restaurantId,
     });
 
-    const [doesRestaurantExist, staffWithThisUsername] = await Promise.all([doesRestaurantExistPromise, staffWithThisUsernamePromise]);
+    const [doesRestaurantExist, staffWithThisUsername] = await Promise.all([
+      doesRestaurantExistPromise,
+      staffWithThisUsernamePromise,
+    ]);
 
     if (!doesRestaurantExist) {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'Restaurant not found',
-        data: null
-      }
+        data: null,
+      };
     }
     if (staffWithThisUsername) {
       return {
         status: HttpStatus.CONFLICT,
-        message: 'Staff\'s username already exists',
-        data: null
-      }
+        message: "Staff's username already exists",
+        data: null,
+      };
     }
 
     const newUser = this.staffRepository.create({
-      username, password, firstName, lastName, IDNumber, dateOfBirth, phone, merchantId, restaurantId
+      username,
+      password,
+      firstName,
+      lastName,
+      IDNumber,
+      dateOfBirth,
+      phone,
+      merchantId,
+      restaurantId,
     });
     await this.staffRepository.save(newUser);
 
@@ -59,27 +81,34 @@ export class StaffService {
       status: HttpStatus.CREATED,
       message: 'Staff created successfully',
       data: {
-        staff: StaffDto.EntityToDTO(newUser)
-      }
+        staff: StaffDto.EntityToDTO(newUser),
+      },
     };
   }
 
-  async findAll(fetchStaffDto: FetchStaffDto): Promise<IStaffServiceFetchStaffResponse> {
+  async findAll(
+    fetchStaffDto: FetchStaffDto,
+  ): Promise<IStaffServiceFetchStaffResponse> {
     const { merchantId, restaurantId, size, page } = fetchStaffDto;
-    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(restaurantId);
+    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(
+      restaurantId,
+    );
     const fetchPromise = this.staffRepository.findAndCount({
       where: [{ merchantId, restaurantId }],
       take: size,
-      skip: page * size
+      skip: page * size,
     });
 
-    const [doesRestaurantExist, [results, total]] = await Promise.all([doesRestaurantExistPromise, fetchPromise]);
+    const [doesRestaurantExist, [results, total]] = await Promise.all([
+      doesRestaurantExistPromise,
+      fetchPromise,
+    ]);
 
     if (!doesRestaurantExist) {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'Restaurant not found',
-        data: null
+        data: null,
       };
     }
 
@@ -89,8 +118,8 @@ export class StaffService {
       data: {
         results: results.map((staff) => StaffDto.EntityToDTO(staff)),
         size,
-        total
-      }
+        total,
+      },
     };
   }
 
@@ -99,30 +128,35 @@ export class StaffService {
       status: HttpStatus.CREATED,
       message: 'User created successfully',
       // user: MerchantDto.EntityToDTO(newUser),
-      data: null
+      data: null,
     };
   }
 
   async update(updateStaffDto: UpdateStaffDto): Promise<IStaffServiceResponse> {
     const { data, staffId, restaurantId } = updateStaffDto;
     // TODO handle valid uuid
-    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(restaurantId);
+    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(
+      restaurantId,
+    );
     const fetchStaffPromise = this.staffRepository.findOne({ id: staffId });
 
-    const [doesRestaurantExist, staff] = await Promise.all([doesRestaurantExistPromise, fetchStaffPromise]);
+    const [doesRestaurantExist, staff] = await Promise.all([
+      doesRestaurantExistPromise,
+      fetchStaffPromise,
+    ]);
 
     if (!staff) {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'Staff not found',
-      }
+      };
     }
 
     if (!doesRestaurantExist) {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'Restaurant not found',
-      }
+      };
     }
 
     // remove unwanted field
@@ -131,9 +165,11 @@ export class StaffService {
       lastName: null,
       phone: null,
       IDNumber: null,
-      dateOfBirth: null
-    }
-    Object.keys(data).forEach(key => typeof templateObject[key] == 'undefined' ? delete data[key] : {});
+      dateOfBirth: null,
+    };
+    Object.keys(data).forEach((key) =>
+      typeof templateObject[key] == 'undefined' ? delete data[key] : {},
+    );
 
     // save to database
     await this.staffRepository.save({ ...staff, ...data });
@@ -144,27 +180,31 @@ export class StaffService {
     };
   }
 
-
   async delete(deleteStaffDto: DeleteStaffDto): Promise<IStaffServiceResponse> {
     const { staffId, restaurantId } = deleteStaffDto;
     // TODO handle valid uuid
-    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(restaurantId);
+    const doesRestaurantExistPromise = this.merchantService.doesRestaurantExist(
+      restaurantId,
+    );
     const fetchStaffPromise = this.staffRepository.findOne({ id: staffId });
 
-    const [doesRestaurantExist, staff] = await Promise.all([doesRestaurantExistPromise, fetchStaffPromise]);
+    const [doesRestaurantExist, staff] = await Promise.all([
+      doesRestaurantExistPromise,
+      fetchStaffPromise,
+    ]);
 
     if (!staff) {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'Staff not found',
-      }
+      };
     }
 
     if (!doesRestaurantExist) {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'Restaurant not found',
-      }
+      };
     }
 
     // shallow delete to database
@@ -176,18 +216,27 @@ export class StaffService {
     };
   }
 
-  async getAuthenticatedStaff(username: string, password: string, restaurantId: string): Promise<IStaffServiceLoginPosResponse> {
-    const isRestaurantAvailablePromise = this.merchantService.isRestaurantAvailable(restaurantId);
+  async getAuthenticatedStaff(
+    username: string,
+    password: string,
+    restaurantId: string,
+  ): Promise<IStaffServiceLoginPosResponse> {
+    const isRestaurantAvailablePromise = this.merchantService.isRestaurantAvailable(
+      restaurantId,
+    );
     const staffPromise = this.staffRepository.findOne({
       username,
-      restaurantId
+      restaurantId,
     });
-    const [isRestaurantAvailable, staff] = await Promise.all([isRestaurantAvailablePromise, staffPromise]);
+    const [isRestaurantAvailable, staff] = await Promise.all([
+      isRestaurantAvailablePromise,
+      staffPromise,
+    ]);
 
     if (!staff) {
       return {
         status: HttpStatus.UNAUTHORIZED,
-        message: 'Staff\'s username does not exist',
+        message: "Staff's username does not exist",
         user: null,
       };
     }
@@ -204,7 +253,7 @@ export class StaffService {
     if (!isMatch)
       return {
         status: HttpStatus.UNAUTHORIZED,
-        message: 'Staff\'s password does not correct',
+        message: "Staff's password does not correct",
         user: null,
       };
 
@@ -213,8 +262,13 @@ export class StaffService {
       status: HttpStatus.OK,
       message: 'Staff information is verified',
       user: {
-        id, username, firstName, lastName, fullName, restaurantId
-      }
+        id,
+        username,
+        firstName,
+        lastName,
+        fullName,
+        restaurantId,
+      },
     };
   }
 }

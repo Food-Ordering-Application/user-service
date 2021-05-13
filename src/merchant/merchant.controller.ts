@@ -12,7 +12,7 @@ import { MerchantService } from './merchant.service';
 
 @Controller()
 export class MerchantController {
-  constructor(private readonly merchantService: MerchantService) { }
+  constructor(private readonly merchantService: MerchantService) {}
 
   @MessagePattern('createMerchant')
   create(@Payload() createMerchantDto: CreateMerchantDto) {
@@ -37,16 +37,24 @@ export class MerchantController {
   }
 
   @MessagePattern('fetchRestaurantsOfMerchant')
-  async fetchRestaurantsOfMerchant(@Payload() fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
-    return await this.merchantService.fetchRestaurantsOfMerchant(fetchRestaurantsOfMerchantDto);
+  async fetchRestaurantsOfMerchant(
+    @Payload() fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto,
+  ): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
+    return await this.merchantService.fetchRestaurantsOfMerchant(
+      fetchRestaurantsOfMerchantDto,
+    );
   }
 
   @MessagePattern('verifyRestaurant')
-  async verifyRestaurant(@Payload() verifyRestaurantDto: VerifyRestaurantDto): Promise<IMerchantServiceResponse> {
+  async verifyRestaurant(
+    @Payload() verifyRestaurantDto: VerifyRestaurantDto,
+  ): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyRestaurant(verifyRestaurantDto);
   }
   @MessagePattern('verifyPosAppKey')
-  async verifyPosAppKey(@Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
+  async verifyPosAppKey(
+    @Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto,
+  ): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyPosAppKey(verifyPosAppKeyDto);
   }
 

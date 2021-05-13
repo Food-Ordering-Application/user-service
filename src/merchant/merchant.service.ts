@@ -29,22 +29,34 @@ export class MerchantService {
     private restaurantProfileRepository: Repository<RestaurantProfile>,
     @Inject(RESTAURANT_SERVICE)
     private restaurantServiceClient: ClientProxy,
-  ) { }
+  ) {}
 
   async create(createMerchantDto: CreateMerchantDto) {
-    const { username, password, email, phone, fullName, IDNumber } = createMerchantDto;
+    const {
+      username,
+      password,
+      email,
+      phone,
+      fullName,
+      IDNumber,
+    } = createMerchantDto;
     const merchantWithThisUsername = await this.merchantsRepository.findOne({
-      username
+      username,
     });
     if (merchantWithThisUsername) {
       return {
         status: HttpStatus.CONFLICT,
         message: 'Username already exists',
         user: null,
-      }
+      };
     }
     const newUser = this.merchantsRepository.create({
-      username, password, email, phone, fullName, IDNumber
+      username,
+      password,
+      email,
+      phone,
+      fullName,
+      IDNumber,
     });
     await this.merchantsRepository.save(newUser);
     return {
@@ -56,12 +68,12 @@ export class MerchantService {
 
   async getAuthenticatedMerchant(username: string, password: string) {
     const merchant = await this.merchantsRepository.findOne({
-      username
+      username,
     });
     if (!merchant) {
       return {
         status: HttpStatus.UNAUTHORIZED,
-        message: 'Merchant\'s username does not exist',
+        message: "Merchant's username does not exist",
         user: null,
       };
     }
@@ -69,7 +81,7 @@ export class MerchantService {
     if (!isMatch)
       return {
         status: HttpStatus.UNAUTHORIZED,
-        message: 'Merchant\'s password does not correct',
+        message: "Merchant's password does not correct",
         user: null,
       };
     return {
@@ -81,7 +93,7 @@ export class MerchantService {
 
   async findMerchantById(id: string) {
     const merchant = await this.merchantsRepository.findOne({
-      id
+      id,
     });
 
     if (!merchant)
@@ -100,7 +112,17 @@ export class MerchantService {
 
   async handleRestaurantCreated(payload: RestaurantCreatedEventPayload) {
     const { merchantId, restaurantId, data } = payload;
-    const { name, phone, area, coverImageUrl, city, address, isActive, isBanned, isVerified } = data;
+    const {
+      name,
+      phone,
+      area,
+      coverImageUrl,
+      city,
+      address,
+      isActive,
+      isBanned,
+      isVerified,
+    } = data;
     const restaurantProfile = this.restaurantProfileRepository.create({
       restaurantId,
       merchantId,
@@ -112,22 +134,24 @@ export class MerchantService {
       address,
       isActive,
       isBanned,
-      isVerified
+      isVerified,
     });
     await this.restaurantProfileRepository.save(restaurantProfile);
   }
 
-  async verifyRestaurant(verifyRestaurantDto: VerifyRestaurantDto): Promise<IMerchantServiceResponse> {
+  async verifyRestaurant(
+    verifyRestaurantDto: VerifyRestaurantDto,
+  ): Promise<IMerchantServiceResponse> {
     const { restaurantId } = verifyRestaurantDto;
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
-      restaurantId
+      restaurantId,
     });
 
     if (!restaurantProfile)
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'RestaurantId was not found',
-        data: null
+        data: null,
       };
 
     restaurantProfile.isVerified = true;
@@ -137,20 +161,25 @@ export class MerchantService {
       restaurantId,
       data: {
         isVerified: true,
-      }
+      },
     };
-    this.restaurantServiceClient.emit({ event: 'restaurant_profile_updated' }, restaurantProfileUpdatedEventPayload);
+    this.restaurantServiceClient.emit(
+      { event: 'restaurant_profile_updated' },
+      restaurantProfileUpdatedEventPayload,
+    );
 
     return {
       status: HttpStatus.OK,
       message: 'Verify restaurant successfully',
       data: {
-        posAppKey: restaurantProfile.posAppKey
-      }
+        posAppKey: restaurantProfile.posAppKey,
+      },
     };
   }
 
-  async verifyPosAppKey(verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
+  async verifyPosAppKey(
+    verifyPosAppKeyDto: VerifyPosAppKeyDto,
+  ): Promise<IMerchantServiceResponse> {
     const { posAppKey, deviceId } = verifyPosAppKeyDto;
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
       posAppKey,
@@ -160,73 +189,78 @@ export class MerchantService {
       return {
         status: HttpStatus.NOT_FOUND,
         message: 'PosAppKey was not found',
-        data: null
+        data: null,
       };
 
     if (restaurantProfile.deviceId) {
       return {
         status: HttpStatus.FORBIDDEN,
         message: 'Restaurant already used the code',
-        data: null
+        data: null,
       };
     }
 
-    await this.restaurantProfileRepository.update(restaurantProfile, { deviceId });
+    await this.restaurantProfileRepository.update(restaurantProfile, {
+      deviceId,
+    });
     const { merchantId, restaurantId } = restaurantProfile;
     return {
       status: HttpStatus.OK,
       message: 'Verify PosAppKey successfully',
       data: {
         merchantId,
-        restaurantId
-      }
+        restaurantId,
+      },
     };
   }
 
-  private async getVerifiedRestaurantProfile(restaurantProfile: RestaurantProfile) {
+  private async getVerifiedRestaurantProfile(
+    restaurantProfile: RestaurantProfile,
+  ) {
     const getRandom = () => randomBytes(2).toString('hex').toUpperCase();
     restaurantProfile.posAppKey = `${getRandom()}-${getRandom()}-${getRandom()}`;
     try {
-      await this.restaurantProfileRepository.save(restaurantProfile)
-    }
-    catch (e) {
+      await this.restaurantProfileRepository.save(restaurantProfile);
+    } catch (e) {
       this.getVerifiedRestaurantProfile(restaurantProfile);
     }
   }
 
-  public async isRestaurantAvailable(restaurantId: string): Promise<{ result: boolean, message: string }> {
+  public async isRestaurantAvailable(
+    restaurantId: string,
+  ): Promise<{ result: boolean; message: string }> {
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
-      restaurantId
+      restaurantId,
     });
 
     if (!restaurantProfile) {
       return {
         result: false,
-        message: 'Restaurant was not found'
+        message: 'Restaurant was not found',
       };
     }
     const { isBanned, isVerified } = restaurantProfile;
     if (isBanned) {
       return {
         result: false,
-        message: 'Restaurant was banned'
+        message: 'Restaurant was banned',
       };
     }
     if (!isVerified) {
       return {
         result: false,
-        message: 'Restaurant was not verified'
-      }
+        message: 'Restaurant was not verified',
+      };
     }
     return {
       result: true,
-      message: null
+      message: null,
     };
   }
 
   public async doesRestaurantExist(restaurantId: string): Promise<boolean> {
     const restaurantProfile = await this.restaurantProfileRepository.findOne({
-      restaurantId
+      restaurantId,
     });
 
     if (!restaurantProfile) {
@@ -236,27 +270,36 @@ export class MerchantService {
   }
 
   public async doesMerchantExist(merchantId: string): Promise<boolean> {
-    const count = await this.merchantsRepository.count({ where: { id: merchantId } });
+    const count = await this.merchantsRepository.count({
+      where: { id: merchantId },
+    });
     return count > 0;
   }
 
-  async fetchRestaurantsOfMerchant(fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
+  async fetchRestaurantsOfMerchant(
+    fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto,
+  ): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
     const { merchantId, size, page } = fetchRestaurantsOfMerchantDto;
 
-    const [results, total] = await this.restaurantProfileRepository.findAndCount({
+    const [
+      results,
+      total,
+    ] = await this.restaurantProfileRepository.findAndCount({
       where: [{ merchantId }],
       take: size,
-      skip: page * size
+      skip: page * size,
     });
 
     return {
       status: HttpStatus.OK,
       message: 'Fetched restaurants successfully',
       data: {
-        results: results.map((staff) => RestaurantProfileDto.EntityToDTO(staff)),
+        results: results.map((staff) =>
+          RestaurantProfileDto.EntityToDTO(staff),
+        ),
         size,
-        total
-      }
+        total,
+      },
     };
   }
 

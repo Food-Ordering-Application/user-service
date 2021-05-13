@@ -1,4 +1,3 @@
-
 export class FetchStaffDto {
   merchantId: string;
   restaurantId: string;

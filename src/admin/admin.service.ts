@@ -7,21 +7,19 @@ import { AdminDto } from './dto/admin.dto';
 
 @Injectable()
 export class AdminService {
-
   constructor(
     @InjectRepository(Admin)
     private adminsRepository: Repository<Admin>,
-  ) { }
-
+  ) {}
 
   async getAuthenticatedAdmin(username: string, password: string) {
     const admin = await this.adminsRepository.findOne({
-      username
+      username,
     });
     if (!admin) {
       return {
         status: HttpStatus.UNAUTHORIZED,
-        message: 'Admin\'s username does not exist',
+        message: "Admin's username does not exist",
         user: null,
       };
     }
@@ -29,7 +27,7 @@ export class AdminService {
     if (!isMatch)
       return {
         status: HttpStatus.UNAUTHORIZED,
-        message: 'Admin\'s password does not correct',
+        message: "Admin's password does not correct",
         user: null,
       };
     return {

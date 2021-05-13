@@ -4,8 +4,8 @@ export interface IStaffServiceFetchStaffResponse {
   status: number;
   message: string;
   data: {
-    results: StaffDto[],
-    total: number,
-    size: number,
+    results: StaffDto[];
+    total: number;
+    size: number;
   };
 }

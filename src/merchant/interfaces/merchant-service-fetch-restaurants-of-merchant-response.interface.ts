@@ -3,8 +3,8 @@ export interface IMerchantServiceFetchRestaurantsOfMerchantResponse {
   status: number;
   message: string;
   data: {
-    results: RestaurantProfileDto[],
-    total: number,
-    size: number,
+    results: RestaurantProfileDto[];
+    total: number;
+    size: number;
   };
 }

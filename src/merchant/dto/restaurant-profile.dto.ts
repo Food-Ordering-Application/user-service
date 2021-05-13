@@ -1,5 +1,5 @@
-import { Merchant } from "../entities/merchant.entity";
-import { RestaurantProfile } from "../entities/restaurant-profile.entity";
+import { Merchant } from '../entities/merchant.entity';
+import { RestaurantProfile } from '../entities/restaurant-profile.entity';
 
 export class RestaurantProfileDto {
   restaurantId: string;
@@ -14,10 +14,31 @@ export class RestaurantProfileDto {
   isActive: boolean;
   isVerified: boolean;
   static EntityToDTO(restaurant: RestaurantProfile): RestaurantProfileDto {
-    const { restaurantId, posAppKey, name, phone, image, area, city, address, contractId, isActive, isVerified } = restaurant;
+    const {
+      restaurantId,
+      posAppKey,
+      name,
+      phone,
+      image,
+      area,
+      city,
+      address,
+      contractId,
+      isActive,
+      isVerified,
+    } = restaurant;
     return {
-      restaurantId, posAppKey, name, phone, image, area, city, address, contractId, isActive, isVerified
+      restaurantId,
+      posAppKey,
+      name,
+      phone,
+      image,
+      area,
+      city,
+      address,
+      contractId,
+      isActive,
+      isVerified,
     };
   }
 }
-

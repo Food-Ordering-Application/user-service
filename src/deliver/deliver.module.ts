@@ -4,6 +4,6 @@ import { DeliverController } from './deliver.controller';
 
 @Module({
   controllers: [DeliverController],
-  providers: [DeliverService]
+  providers: [DeliverService],
 })
 export class DeliverModule {}

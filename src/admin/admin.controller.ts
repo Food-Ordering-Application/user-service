@@ -5,12 +5,11 @@ import { LoginAdminDto } from './dto/login-admin.dto';
 
 @Controller()
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @MessagePattern('getAuthenticatedAdmin')
   getAuthenticatedAdmin(@Payload() loginAdminDto: LoginAdminDto) {
     const { username, password } = loginAdminDto;
     return this.adminService.getAuthenticatedAdmin(username, password);
   }
-
 }

@@ -1,5 +1,5 @@
-import { Entity } from "typeorm";
-import { Staff } from "../entities/staff.entity";
+import { Entity } from 'typeorm';
+import { Staff } from '../entities/staff.entity';
 @Entity()
 export class StaffDto {
   id: string;
@@ -13,7 +13,17 @@ export class StaffDto {
   IDNumber: string;
   dateOfBirth: Date;
   static EntityToDTO(staff: Staff): StaffDto {
-    const { id, merchantId, username, restaurantId, firstName, lastName, phone, IDNumber, dateOfBirth } = staff;
+    const {
+      id,
+      merchantId,
+      username,
+      restaurantId,
+      firstName,
+      lastName,
+      phone,
+      IDNumber,
+      dateOfBirth,
+    } = staff;
     return {
       id,
       merchantId,
@@ -24,7 +34,7 @@ export class StaffDto {
       fullName: `${lastName} ${firstName}`,
       phone,
       IDNumber,
-      dateOfBirth
+      dateOfBirth,
     };
   }
 }
