@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { RESTAURANT_SERVICE } from './../constants';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { FetchRestaurantsOfMerchantDto } from './dto/fetch-restaurants-of-merchant.dto';
+import { FetchRestaurantProfilesDto } from './dto/fetch-restaurants-of-merchant.dto';
 import { MerchantDto } from './dto/merchant.dto';
 import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
@@ -15,7 +15,7 @@ import { Merchant } from './entities/merchant.entity';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
-import { IMerchantServiceFetchRestaurantsOfMerchantResponse } from './interfaces/merchant-service-fetch-restaurants-of-merchant-response.interface';
+import { IMerchantServiceFetchRestaurantProfilesResponse } from './interfaces/merchant-service-fetch-restaurant-profiles-response.interface';
 import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 
 @Injectable()
@@ -276,16 +276,15 @@ export class MerchantService {
     return count > 0;
   }
 
-  async fetchRestaurantsOfMerchant(
-    fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto,
-  ): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
-    const { merchantId, size, page } = fetchRestaurantsOfMerchantDto;
+  async fetchRestaurantProfiles(
+    fetchRestaurantsOfMerchantDto: FetchRestaurantProfilesDto,
+  ): Promise<IMerchantServiceFetchRestaurantProfilesResponse> {
+    const { size, page } = fetchRestaurantsOfMerchantDto;
 
     const [
       results,
       total,
     ] = await this.restaurantProfileRepository.findAndCount({
-      where: [{ merchantId }],
       take: size,
       skip: page * size,
     });
