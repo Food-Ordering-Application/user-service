@@ -1,5 +1,3 @@
-
-
 export interface IMerchantServiceResponse {
   status: number;
   message: string;

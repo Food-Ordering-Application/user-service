@@ -6,4 +6,3 @@ export class CreateMerchantDto {
   fullName: string;
   IDNumber: string;
 }
-

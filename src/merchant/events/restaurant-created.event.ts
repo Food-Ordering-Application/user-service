@@ -11,5 +11,5 @@ export class RestaurantCreatedEventPayload {
     isActive: boolean;
     isVerified: boolean;
     isBanned: boolean;
-  }
+  };
 }

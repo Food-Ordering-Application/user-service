@@ -1,4 +1,4 @@
-import { Merchant } from "../entities/merchant.entity";
+import { Merchant } from '../entities/merchant.entity';
 
 export class MerchantDto {
   id: string;
@@ -10,8 +10,12 @@ export class MerchantDto {
   static EntityToDTO(merchant: Merchant): MerchantDto {
     const { id, username, email, phone, fullName, IDNumber } = merchant;
     return {
-      id, username, email, phone, fullName, IDNumber
+      id,
+      username,
+      email,
+      phone,
+      fullName,
+      IDNumber,
     };
   }
 }
-

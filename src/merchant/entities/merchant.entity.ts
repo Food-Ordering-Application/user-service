@@ -1,7 +1,15 @@
 import { Staff } from './../../staff/entities/staff.entity';
-import { hash } from "../../shared/helper";
-import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { RestaurantProfile } from "./restaurant-profile.entity";
+import { hash } from '../../shared/helper';
+import {
+  AfterLoad,
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { RestaurantProfile } from './restaurant-profile.entity';
 
 @Entity()
 export class Merchant {
@@ -35,7 +43,10 @@ export class Merchant {
   @Column({ default: false })
   isBanned: boolean;
 
-  @OneToMany(() => RestaurantProfile, (restaurantProfile) => restaurantProfile.merchantId)
+  @OneToMany(
+    () => RestaurantProfile,
+    (restaurantProfile) => restaurantProfile.merchantId,
+  )
   profiles: RestaurantProfile[];
 
   @OneToMany(() => Staff, (staff) => staff.merchant)

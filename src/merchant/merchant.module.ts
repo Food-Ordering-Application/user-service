@@ -23,15 +23,14 @@ import { MerchantService } from './merchant.service';
             queue: configService.get('RESTAURANT_AMQP_QUEUE'),
             queueOptions: {
               durable: false,
-
             },
           },
         }),
-      }
-    ])
+      },
+    ]),
   ],
   controllers: [MerchantController],
   providers: [MerchantService],
-  exports: [MerchantService]
+  exports: [MerchantService],
 })
-export class MerchantModule { }
+export class MerchantModule {}

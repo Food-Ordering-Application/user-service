@@ -1,6 +1,16 @@
-import { hash } from "../../shared/helper";
-import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, Generated, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Merchant } from "./merchant.entity";
+import { hash } from '../../shared/helper';
+import {
+  AfterLoad,
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  Generated,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Merchant } from './merchant.entity';
 
 @Entity()
 export class RestaurantProfile {

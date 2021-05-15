@@ -1,6 +1,17 @@
 import { Merchant } from '../../merchant/entities/merchant.entity';
-import { hash } from "../../shared/helper";
-import { AfterLoad, BeforeInsert, BeforeUpdate, Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { hash } from '../../shared/helper';
+import {
+  AfterLoad,
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 @Entity()
 export class Staff {
   @PrimaryGeneratedColumn('uuid')
@@ -36,7 +47,7 @@ export class Staff {
 
   @Column({
     type: 'date',
-    nullable: true
+    nullable: true,
   })
   dateOfBirth: Date;
 

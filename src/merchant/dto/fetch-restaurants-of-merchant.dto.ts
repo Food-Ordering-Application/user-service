@@ -1,6 +1,4 @@
-
-export class FetchRestaurantsOfMerchantDto {
-  merchantId: string;
+export class FetchRestaurantProfilesDto {
   page: number;
   size: number;
 }

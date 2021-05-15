@@ -1,4 +1,4 @@
-import { Admin } from "../entities/admin.entity";
+import { Admin } from '../entities/admin.entity';
 
 export class AdminDto {
   id: string;
@@ -7,7 +7,9 @@ export class AdminDto {
   static EntityToDTO(admin: Admin): AdminDto {
     const { id, username, name } = admin;
     return {
-      id, username, name
+      id,
+      username,
+      name,
     };
   }
 }

@@ -4,5 +4,5 @@ export interface IStaffServiceCreateStaffResponse {
   message: string;
   data: {
     staff: StaffDto;
-  }
+  };
 }

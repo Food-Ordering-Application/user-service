@@ -1,18 +1,18 @@
 import { Controller } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { FetchRestaurantsOfMerchantDto } from './dto/fetch-restaurants-of-merchant.dto';
+import { FetchRestaurantProfilesDto } from './dto/fetch-restaurants-of-merchant.dto';
 import { LoginMerchantDto } from './dto/login-merchant.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
-import { IMerchantServiceFetchRestaurantsOfMerchantResponse } from './interfaces/merchant-service-fetch-restaurants-of-merchant-response.interface';
+import { IMerchantServiceFetchRestaurantProfilesResponse } from './interfaces/merchant-service-fetch-restaurant-profiles-response.interface';
 import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
 import { MerchantService } from './merchant.service';
 
 @Controller()
 export class MerchantController {
-  constructor(private readonly merchantService: MerchantService) { }
+  constructor(private readonly merchantService: MerchantService) {}
 
   @MessagePattern('createMerchant')
   create(@Payload() createMerchantDto: CreateMerchantDto) {
@@ -36,17 +36,25 @@ export class MerchantController {
     return await this.merchantService.handleRestaurantCreated(data);
   }
 
-  @MessagePattern('fetchRestaurantsOfMerchant')
-  async fetchRestaurantsOfMerchant(@Payload() fetchRestaurantsOfMerchantDto: FetchRestaurantsOfMerchantDto): Promise<IMerchantServiceFetchRestaurantsOfMerchantResponse> {
-    return await this.merchantService.fetchRestaurantsOfMerchant(fetchRestaurantsOfMerchantDto);
+  @MessagePattern('fetchRestaurantProfiles')
+  async fetchRestaurantsOfMerchant(
+    @Payload() fetchRestaurantProfilesDto: FetchRestaurantProfilesDto,
+  ): Promise<IMerchantServiceFetchRestaurantProfilesResponse> {
+    return await this.merchantService.fetchRestaurantProfiles(
+      fetchRestaurantProfilesDto,
+    );
   }
 
   @MessagePattern('verifyRestaurant')
-  async verifyRestaurant(@Payload() verifyRestaurantDto: VerifyRestaurantDto): Promise<IMerchantServiceResponse> {
+  async verifyRestaurant(
+    @Payload() verifyRestaurantDto: VerifyRestaurantDto,
+  ): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyRestaurant(verifyRestaurantDto);
   }
   @MessagePattern('verifyPosAppKey')
-  async verifyPosAppKey(@Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto): Promise<IMerchantServiceResponse> {
+  async verifyPosAppKey(
+    @Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto,
+  ): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyPosAppKey(verifyPosAppKeyDto);
   }
 
