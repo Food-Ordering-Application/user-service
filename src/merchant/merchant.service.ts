@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { RESTAURANT_SERVICE } from './../constants';
 import {
+  AddPaypalPaymentDto,
   CreateMerchantDto,
   FetchPaymentDto,
   FetchRestaurantProfilesDto,
@@ -24,6 +25,7 @@ import {
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
 import {
+  IMerchantServiceAddPaypalPaymentResponse,
   IMerchantServiceFetchPaymentOfRestaurantResponse,
   IMerchantServiceFetchRestaurantProfilesResponse,
   IMerchantServiceResponse,
@@ -364,5 +366,63 @@ export class MerchantService {
         payment: PaymentDto.EntityToDto(payment),
       },
     };
+  }
+
+  async addPaypalPaymentToRestaurant(
+    addPaypalPaymentToRestaurantDto: AddPaypalPaymentDto,
+  ): Promise<IMerchantServiceAddPaypalPaymentResponse> {
+    const { merchantId, restaurantId, data } = addPaypalPaymentToRestaurantDto;
+    const { merchantIdInPayPal } = data;
+
+    const paymentOfRestaurant = await this.restaurantProfileRepository.findOne(
+      {
+        merchantId: merchantId,
+        restaurantId: restaurantId,
+      },
+      { relations: ['payment'] },
+    );
+
+    if (!paymentOfRestaurant) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+      };
+    }
+
+    const { payment } = paymentOfRestaurant;
+    if (!payment?.paypal) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Cannot query payment information',
+      };
+    }
+
+    payment.paypal.merchantIdInPayPal = merchantIdInPayPal;
+
+    try {
+      // save to database
+      await this.paypalPaymentRepository.save(payment.paypal);
+      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
+        restaurantId,
+        data: {
+          merchantIdInPayPal,
+        },
+      };
+
+      this.restaurantServiceClient.emit(
+        { event: 'restaurant_profile_updated' },
+        restaurantProfileUpdatedEventPayload,
+      );
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Add Paypal payment successfully',
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e,
+      };
+    }
   }
 }

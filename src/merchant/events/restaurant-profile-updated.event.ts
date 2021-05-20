@@ -4,5 +4,6 @@ export class RestaurantProfileUpdatedEventPayload {
     isVerified?: boolean;
     isActive?: boolean;
     isBanned?: boolean;
+    merchantIdInPayPal?: string;
   };
 }

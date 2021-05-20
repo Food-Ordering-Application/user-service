@@ -7,12 +7,14 @@ import {
   VerifyRestaurantDto,
   VerifyPosAppKeyDto,
   FetchPaymentDto,
+  AddPaypalPaymentDto,
 } from './dto';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import {
   IMerchantServiceResponse,
   IMerchantServiceFetchPaymentOfRestaurantResponse,
   IMerchantServiceFetchRestaurantProfilesResponse,
+  IMerchantServiceAddPaypalPaymentResponse,
 } from './interfaces';
 import { MerchantService } from './merchant.service';
 
@@ -76,6 +78,15 @@ export class MerchantController {
   ): Promise<IMerchantServiceFetchPaymentOfRestaurantResponse> {
     return await this.merchantService.fetchPaymentOfRestaurant(
       fetchPaymentOfRestaurantDto,
+    );
+  }
+
+  @MessagePattern('addPaypalPaymentToRestaurant')
+  async addPaypalPaymentToRestaurant(
+    @Payload() addPaypalPaymentToRestaurantDto: AddPaypalPaymentDto,
+  ): Promise<IMerchantServiceAddPaypalPaymentResponse> {
+    return await this.merchantService.addPaypalPaymentToRestaurant(
+      addPaypalPaymentToRestaurantDto,
     );
   }
 }
