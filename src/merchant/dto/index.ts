@@ -9,3 +9,4 @@ export { UpdateMerchantDto } from './update-merchant.dto';
 export { VerifyPosAppKeyDto } from './verify-pos-app-key.dto';
 export { VerifyRestaurantDto } from './verify-restaurant.dto';
 export { AddPaypalPaymentDto } from './add-paypal-payment.dto';
+export { GetPayPalSignUpLinkDto } from './get-paypal-signup-link.dto';

@@ -1,4 +1,10 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpService,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
@@ -10,6 +16,7 @@ import {
   CreateMerchantDto,
   FetchPaymentDto,
   FetchRestaurantProfilesDto,
+  GetPayPalSignUpLinkDto,
   MerchantDto,
   PaymentDto,
   RestaurantProfileDto,
@@ -24,7 +31,9 @@ import {
 } from './entities';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
+import { PayPalClient } from './helpers/paypal-client';
 import {
+  IGetPayPalSignUpLinkResponse,
   IMerchantServiceAddPaypalPaymentResponse,
   IMerchantServiceFetchPaymentOfRestaurantResponse,
   IMerchantServiceFetchRestaurantProfilesResponse,
@@ -45,6 +54,7 @@ export class MerchantService {
     private paypalPaymentRepository: Repository<PayPalPayment>,
     @Inject(RESTAURANT_SERVICE)
     private restaurantServiceClient: ClientProxy,
+    private httpService: HttpService,
   ) {}
 
   async create(createMerchantDto: CreateMerchantDto) {
@@ -422,6 +432,32 @@ export class MerchantService {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: e,
+      };
+    }
+  }
+
+  async getPayPalSignUpLink(
+    getPayPalSignUpLinkDto: GetPayPalSignUpLinkDto,
+  ): Promise<IGetPayPalSignUpLinkResponse> {
+    const { merchantId, redirectUrl, restaurantId } = getPayPalSignUpLinkDto;
+    try {
+      const actionUrl = await PayPalClient.generateSignUpLink(
+        restaurantId,
+        redirectUrl,
+        this.httpService,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Generate PayPal partner referral sign up link successfully',
+        data: {
+          action_url: actionUrl,
+        },
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e,
+        data: null,
       };
     }
   }

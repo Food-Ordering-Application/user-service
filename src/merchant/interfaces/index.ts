@@ -3,3 +3,4 @@ export { IMerchantServiceFetchRestaurantProfilesResponse } from './merchant-serv
 export { IMerchantServiceResponse } from './merchant-service-response.interface';
 export { IMerchantServiceAddPaypalPaymentResponse } from './merchant-service-add-paypal-payment-response.interface';
 export { IPayPalOnboardStatusResponse } from './paypal-onboard-status-response.interface';
+export { IGetPayPalSignUpLinkResponse } from './get-paypal-signup-link-response.interface';
