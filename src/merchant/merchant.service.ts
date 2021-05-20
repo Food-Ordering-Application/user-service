@@ -16,6 +16,7 @@ import {
   CreateMerchantDto,
   FetchPaymentDto,
   FetchRestaurantProfilesDto,
+  GetPayPalOnboardStatusDto,
   GetPayPalSignUpLinkDto,
   MerchantDto,
   PaymentDto,
@@ -29,10 +30,12 @@ import {
   PayPalPayment,
   RestaurantProfile,
 } from './entities';
+import { PayPalOnboardStatus } from './enums/paypal-onboard-status';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
 import { PayPalClient } from './helpers/paypal-client';
 import {
+  IGetPayPalOnboardStatusResponse,
   IGetPayPalSignUpLinkResponse,
   IMerchantServiceAddPaypalPaymentResponse,
   IMerchantServiceFetchPaymentOfRestaurantResponse,
@@ -451,6 +454,143 @@ export class MerchantService {
         message: 'Generate PayPal partner referral sign up link successfully',
         data: {
           action_url: actionUrl,
+        },
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e,
+        data: null,
+      };
+    }
+  }
+
+  async getPayPalOnboardStatus(
+    getPayPalOnboardStatusDto: GetPayPalOnboardStatusDto,
+  ): Promise<IGetPayPalOnboardStatusResponse> {
+    const { merchantId, restaurantId } = getPayPalOnboardStatusDto;
+    const paymentOfRestaurant = await this.restaurantProfileRepository.findOne(
+      {
+        merchantId: merchantId,
+        restaurantId: restaurantId,
+      },
+      { relations: ['payment'] },
+    );
+
+    if (!paymentOfRestaurant) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+        data: null,
+      };
+    }
+
+    const { payment } = paymentOfRestaurant;
+    if (!payment?.paypal) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Cannot query payment information',
+        data: null,
+      };
+    }
+    const { paypal } = payment;
+    const { isOnboard, merchantIdInPayPal } = paypal;
+
+    // already onboard
+    if (isOnboard) {
+      return {
+        status: HttpStatus.OK,
+        message: '',
+        data: {
+          isOnboard: true,
+          message: PayPalOnboardStatus.ONBOARD,
+        },
+      };
+    }
+    try {
+      // already add merchant Id (not confirm yet)
+      if (!merchantIdInPayPal) {
+        let merchantIdInPayPal: string = null;
+
+        try {
+          merchantIdInPayPal = await PayPalClient.getMerchantIdInPayPal(
+            PayPalClient.PartnerId,
+            restaurantId,
+            this.httpService,
+          );
+        } catch (e) {
+          return {
+            status: HttpStatus.OK,
+            message: e,
+            data: {
+              isOnboard: false,
+              message: PayPalOnboardStatus.TRY_AGAIN,
+            },
+          };
+        }
+
+        paypal.merchantIdInPayPal = merchantIdInPayPal;
+      }
+
+      const onboardStatusResponse = await PayPalClient.getOnboardStatus(
+        PayPalClient.PartnerId,
+        paypal.merchantIdInPayPal,
+        this.httpService,
+      );
+
+      const {
+        payments_receivable,
+        primary_email_confirmed,
+        oauth_integrations,
+      } = onboardStatusResponse;
+
+      if (!payments_receivable) {
+        return {
+          status: HttpStatus.OK,
+          message: '',
+          data: {
+            isOnboard: false,
+            message: PayPalOnboardStatus.SELLER_CANNOT_RECEIVE_PAYMENT,
+          },
+        };
+      }
+
+      if (!primary_email_confirmed) {
+        return {
+          status: HttpStatus.OK,
+          message: '',
+          data: {
+            isOnboard: false,
+            message: PayPalOnboardStatus.SELLER_EMAIL_WAS_NOT_CONFIRMED,
+          },
+        };
+      }
+
+      const didSellerGrantPermission =
+        oauth_integrations &&
+        oauth_integrations.length &&
+        oauth_integrations[0].oauth_third_party?.length;
+
+      if (!didSellerGrantPermission) {
+        return {
+          status: HttpStatus.OK,
+          message: '',
+          data: {
+            isOnboard: false,
+            message: PayPalOnboardStatus.SELLER_DID_NOT_GRANT_PERMISSION,
+          },
+        };
+      }
+
+      paypal.isOnboard = true;
+      await this.paypalPaymentRepository.save(paypal);
+
+      return {
+        status: HttpStatus.OK,
+        message: '',
+        data: {
+          isOnboard: false,
+          message: PayPalOnboardStatus.ONBOARD,
         },
       };
     } catch (e) {

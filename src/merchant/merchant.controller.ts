@@ -9,6 +9,7 @@ import {
   FetchPaymentDto,
   AddPaypalPaymentDto,
   GetPayPalSignUpLinkDto,
+  GetPayPalOnboardStatusDto,
 } from './dto';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import {
@@ -17,6 +18,7 @@ import {
   IMerchantServiceFetchRestaurantProfilesResponse,
   IMerchantServiceAddPaypalPaymentResponse,
   IGetPayPalSignUpLinkResponse,
+  IGetPayPalOnboardStatusResponse,
 } from './interfaces';
 import { MerchantService } from './merchant.service';
 
@@ -98,6 +100,15 @@ export class MerchantController {
   ): Promise<IGetPayPalSignUpLinkResponse> {
     return await this.merchantService.getPayPalSignUpLink(
       getPayPalSignUpLinkDto,
+    );
+  }
+
+  @MessagePattern('getPayPalOnboardStatus')
+  async getPayPalOnboardStatus(
+    @Payload() getPayPalOnboardStatusDto: GetPayPalOnboardStatusDto,
+  ): Promise<IGetPayPalOnboardStatusResponse> {
+    return await this.merchantService.getPayPalOnboardStatus(
+      getPayPalOnboardStatusDto,
     );
   }
 }
