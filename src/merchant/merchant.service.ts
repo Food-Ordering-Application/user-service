@@ -5,12 +5,16 @@ import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { RESTAURANT_SERVICE } from './../constants';
-import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { FetchRestaurantProfilesDto } from './dto/fetch-restaurants-of-merchant.dto';
-import { MerchantDto } from './dto/merchant.dto';
-import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
-import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
-import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
+import {
+  CreateMerchantDto,
+  FetchPaymentDto,
+  FetchRestaurantProfilesDto,
+  MerchantDto,
+  PaymentDto,
+  RestaurantProfileDto,
+  VerifyPosAppKeyDto,
+  VerifyRestaurantDto,
+} from './dto';
 import {
   Merchant,
   Payment,
@@ -19,9 +23,11 @@ import {
 } from './entities';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
-import { IMerchantServiceFetchRestaurantProfilesResponse } from './interfaces/merchant-service-fetch-restaurant-profiles-response.interface';
-import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
-
+import {
+  IMerchantServiceFetchPaymentOfRestaurantResponse,
+  IMerchantServiceFetchRestaurantProfilesResponse,
+  IMerchantServiceResponse,
+} from './interfaces';
 @Injectable()
 export class MerchantService {
   private readonly logger = new Logger('MerchantService');
@@ -320,5 +326,43 @@ export class MerchantService {
   async validateMerchantId(merchantId: string): Promise<boolean> {
     const doesExist = await this.doesMerchantExist(merchantId);
     return doesExist;
+  }
+
+  async fetchPaymentOfRestaurant(
+    fetchPaymentOfRestaurantDto: FetchPaymentDto,
+  ): Promise<IMerchantServiceFetchPaymentOfRestaurantResponse> {
+    const { merchantId, restaurantId } = fetchPaymentOfRestaurantDto;
+    const paymentOfRestaurant = await this.restaurantProfileRepository.findOne(
+      {
+        merchantId: merchantId,
+        restaurantId: restaurantId,
+      },
+      { relations: ['payment'] },
+    );
+
+    if (!paymentOfRestaurant) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+        data: null,
+      };
+    }
+
+    const { payment } = paymentOfRestaurant;
+    if (!payment) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Cannot query payment information',
+        data: null,
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Fetched payment of restaurant successfully',
+      data: {
+        payment: PaymentDto.EntityToDto(payment),
+      },
+    };
   }
 }

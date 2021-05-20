@@ -1,13 +1,19 @@
 import { Controller } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
-import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { FetchRestaurantProfilesDto } from './dto/fetch-restaurants-of-merchant.dto';
-import { LoginMerchantDto } from './dto/login-merchant.dto';
-import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
-import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
+import {
+  CreateMerchantDto,
+  FetchRestaurantProfilesDto,
+  LoginMerchantDto,
+  VerifyRestaurantDto,
+  VerifyPosAppKeyDto,
+  FetchPaymentDto,
+} from './dto';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
-import { IMerchantServiceFetchRestaurantProfilesResponse } from './interfaces/merchant-service-fetch-restaurant-profiles-response.interface';
-import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
+import {
+  IMerchantServiceResponse,
+  IMerchantServiceFetchPaymentOfRestaurantResponse,
+  IMerchantServiceFetchRestaurantProfilesResponse,
+} from './interfaces';
 import { MerchantService } from './merchant.service';
 
 @Controller()
@@ -51,6 +57,7 @@ export class MerchantController {
   ): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyRestaurant(verifyRestaurantDto);
   }
+
   @MessagePattern('verifyPosAppKey')
   async verifyPosAppKey(
     @Payload() verifyPosAppKeyDto: VerifyPosAppKeyDto,
@@ -61,5 +68,14 @@ export class MerchantController {
   @MessagePattern('validateMerchantId')
   async verifyMerchant(@Payload() merchantId: string): Promise<boolean> {
     return await this.merchantService.validateMerchantId(merchantId);
+  }
+
+  @MessagePattern('fetchPaymentOfRestaurant')
+  async fetchPaymentOfRestaurant(
+    @Payload() fetchPaymentOfRestaurantDto: FetchPaymentDto,
+  ): Promise<IMerchantServiceFetchPaymentOfRestaurantResponse> {
+    return await this.merchantService.fetchPaymentOfRestaurant(
+      fetchPaymentOfRestaurantDto,
+    );
   }
 }

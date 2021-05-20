@@ -12,7 +12,7 @@ export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => PayPalPayment, { cascade: ['insert', 'update'] })
+  @OneToOne(() => PayPalPayment, { cascade: ['insert', 'update'], eager: true })
   @JoinColumn()
   paypal: PayPalPayment;
 }
