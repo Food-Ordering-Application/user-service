@@ -1,16 +1,25 @@
+import {
+  Payment,
+  PayPalPayment,
+  Merchant,
+  RestaurantProfile,
+} from './entities';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RESTAURANT_SERVICE } from './../constants';
-import { Merchant } from './entities/merchant.entity';
-import { RestaurantProfile } from './entities/restaurant-profile.entity';
 import { MerchantController } from './merchant.controller';
 import { MerchantService } from './merchant.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Merchant, RestaurantProfile]),
+    TypeOrmModule.forFeature([
+      Merchant,
+      RestaurantProfile,
+      Payment,
+      PayPalPayment,
+    ]),
     ClientsModule.registerAsync([
       {
         name: RESTAURANT_SERVICE,

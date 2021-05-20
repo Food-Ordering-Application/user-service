@@ -11,8 +11,12 @@ import { MerchantDto } from './dto/merchant.dto';
 import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
 import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
 import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
-import { Merchant } from './entities/merchant.entity';
-import { RestaurantProfile } from './entities/restaurant-profile.entity';
+import {
+  Merchant,
+  Payment,
+  PayPalPayment,
+  RestaurantProfile,
+} from './entities';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
 import { IMerchantServiceFetchRestaurantProfilesResponse } from './interfaces/merchant-service-fetch-restaurant-profiles-response.interface';
@@ -27,6 +31,10 @@ export class MerchantService {
     private merchantsRepository: Repository<Merchant>,
     @InjectRepository(RestaurantProfile)
     private restaurantProfileRepository: Repository<RestaurantProfile>,
+    @InjectRepository(Payment)
+    private paymentRepository: Repository<Payment>,
+    @InjectRepository(PayPalPayment)
+    private paypalPaymentRepository: Repository<PayPalPayment>,
     @Inject(RESTAURANT_SERVICE)
     private restaurantServiceClient: ClientProxy,
   ) {}
@@ -136,7 +144,14 @@ export class MerchantService {
       isBanned,
       isVerified,
     });
+    restaurantProfile.payment = this.createNewPayment();
     await this.restaurantProfileRepository.save(restaurantProfile);
+  }
+
+  createNewPayment(): Payment {
+    return this.paymentRepository.create({
+      paypal: this.paypalPaymentRepository.create(),
+    });
   }
 
   async verifyRestaurant(
