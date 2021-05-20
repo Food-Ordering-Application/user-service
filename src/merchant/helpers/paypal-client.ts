@@ -215,4 +215,5 @@ export const PayPalClient = {
   generateSignUpLink,
   getMerchantIdInPayPal,
   getOnboardStatus,
+  PartnerId: process.env.PAYPAL_PARTNER_ID,
 };
