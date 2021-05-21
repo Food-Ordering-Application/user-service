@@ -34,18 +34,21 @@ const getNewPaypalToken = async (
   };
 
   try {
+    const response = (await httpService
+      .post(GET_PAYPAL_TOKEN_URL, {}, queryConfig)
+      .toPromise()) as any;
     const {
       data: { access_token, expires_in },
-    } = (await httpService.post(GET_PAYPAL_TOKEN_URL, {}, queryConfig)) as any;
-    // console.log('access_token: ', access_token);
+    } = response;
     return { access_token, expires_in };
   } catch (e) {
+    console.log(e.message);
     return null;
   }
 };
 
 const getPaypalToken = async (httpService: HttpService): Promise<string> => {
-  if (!currentExpiredDate || currentExpiredDate < new Date()) {
+  if (currentToken == null || currentExpiredDate < new Date()) {
     const clientId = process.env.PAYPAL_CLIENT_ID || 'PAYPAL-SANDBOX-CLIENT-ID';
     const clientSecret =
       process.env.PAYPAL_CLIENT_SECRET || 'PAYPAL-SANDBOX-CLIENT-SECRET';
@@ -63,11 +66,9 @@ const getPaypalToken = async (httpService: HttpService): Promise<string> => {
     const { access_token, expires_in } = requestNewToken;
 
     currentToken = access_token;
-    currentExpiredDate = new Date(new Date().getTime() + expires_in);
-
-    console.log({ currentToken, currentExpiredDate });
+    currentExpiredDate = new Date(new Date().getTime() + expires_in - 1 * 1000);
+    console.log('get new PayPal token');
   }
-
   return currentToken;
 };
 
@@ -122,11 +123,9 @@ const generateSignUpLink = async (
 
   const payload = getCreatePartnerReferralPayload(trackingId, returnUrl);
   try {
-    const { data } = (await httpService.post(
-      GENERATE_SIGN_UP_URL,
-      payload,
-      queryConfig,
-    )) as any;
+    const { data } = (await httpService
+      .post(GENERATE_SIGN_UP_URL, payload, queryConfig)
+      .toPromise()) as any;
 
     const { links } = data as {
       links: {
@@ -143,7 +142,7 @@ const generateSignUpLink = async (
 
     return href;
   } catch (e) {
-    throw new Error('Cannot connect to PayPal');
+    throw new Error('Cannot connect to PayPal - ' + e.message);
   }
 };
 
@@ -164,10 +163,9 @@ const getMerchantIdInPayPal = async (
   };
 
   try {
-    const { data } = (await httpService.get(
-      GET_MERCHANT_IN_URL,
-      queryConfig,
-    )) as any;
+    const { data } = (await httpService
+      .get(GET_MERCHANT_IN_URL, queryConfig)
+      .toPromise()) as any;
 
     const { merchant_id } = data as {
       merchant_id: string;
@@ -179,7 +177,7 @@ const getMerchantIdInPayPal = async (
 
     return merchant_id;
   } catch (e) {
-    throw new Error('Cannot connect to PayPal');
+    throw new Error('Cannot connect to PayPal - ' + e.message);
   }
 };
 
@@ -200,14 +198,13 @@ const getOnboardStatus = async (
   };
 
   try {
-    const { data } = (await httpService.get(
-      GET_ONBOARD_STATUS_URL,
-      queryConfig,
-    )) as any;
+    const { data } = (await httpService
+      .get(GET_ONBOARD_STATUS_URL, queryConfig)
+      .toPromise()) as any;
 
     return data as IPayPalOnboardStatusResponse;
   } catch (e) {
-    throw new Error('Cannot connect to PayPal');
+    throw new Error('Cannot connect to PayPal - ' + e.message);
   }
 };
 
