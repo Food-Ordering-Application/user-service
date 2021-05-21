@@ -6,3 +6,5 @@ export { ICustomerAddress } from './customer-address.interface';
 export { ICustomerAddressesResponse } from './addresses-response.interface';
 export { IAddressData } from './address-data.interface';
 export { IGetAddressResponse } from './get-address.interface';
+export { ISimpleResponse } from './simple-response.interface';
+export { IGetCustomerResetPasswordTokenResponse } from './get-customer-reset-password-response.interface';
