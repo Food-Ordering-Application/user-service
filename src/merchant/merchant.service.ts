@@ -500,7 +500,7 @@ export class MerchantService {
     if (isOnboard) {
       return {
         status: HttpStatus.OK,
-        message: '',
+        message: 'Restaurant was onboard',
         data: {
           isOnboard: true,
           message: PayPalOnboardStatus.ONBOARD,
@@ -521,7 +521,7 @@ export class MerchantService {
         } catch (e) {
           return {
             status: HttpStatus.OK,
-            message: e.message,
+            message: e.message + '. User may not click and confirm yet.',
             data: {
               isOnboard: false,
               message: PayPalOnboardStatus.TRY_AGAIN,
@@ -547,7 +547,7 @@ export class MerchantService {
       if (!payments_receivable) {
         return {
           status: HttpStatus.OK,
-          message: '',
+          message: 'PayPal account problem',
           data: {
             isOnboard: false,
             message: PayPalOnboardStatus.SELLER_CANNOT_RECEIVE_PAYMENT,
@@ -558,7 +558,7 @@ export class MerchantService {
       if (!primary_email_confirmed) {
         return {
           status: HttpStatus.OK,
-          message: '',
+          message: 'PayPal account problem',
           data: {
             isOnboard: false,
             message: PayPalOnboardStatus.SELLER_EMAIL_WAS_NOT_CONFIRMED,
@@ -574,7 +574,7 @@ export class MerchantService {
       if (!didSellerGrantPermission) {
         return {
           status: HttpStatus.OK,
-          message: '',
+          message: 'PayPal account problem. User did not grant permission',
           data: {
             isOnboard: false,
             message: PayPalOnboardStatus.SELLER_DID_NOT_GRANT_PERMISSION,
@@ -587,7 +587,7 @@ export class MerchantService {
 
       return {
         status: HttpStatus.OK,
-        message: '',
+        message: 'Restaurant was onboard',
         data: {
           isOnboard: paypal.isOnboard,
           message: PayPalOnboardStatus.ONBOARD,
