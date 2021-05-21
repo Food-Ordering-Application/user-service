@@ -415,18 +415,6 @@ export class MerchantService {
     try {
       // save to database
       await this.paypalPaymentRepository.save(payment.paypal);
-      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
-        restaurantId,
-        data: {
-          merchantIdInPayPal,
-        },
-      };
-
-      this.restaurantServiceClient.emit(
-        { event: 'restaurant_profile_updated' },
-        restaurantProfileUpdatedEventPayload,
-      );
-
       return {
         status: HttpStatus.OK,
         message: 'Add Paypal payment successfully',
@@ -584,6 +572,18 @@ export class MerchantService {
 
       paypal.isOnboard = true;
       await this.paypalPaymentRepository.save(paypal);
+
+      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
+        restaurantId,
+        data: {
+          merchantIdInPayPal,
+        },
+      };
+
+      this.restaurantServiceClient.emit(
+        { event: 'restaurant_profile_updated' },
+        restaurantProfileUpdatedEventPayload,
+      );
 
       return {
         status: HttpStatus.OK,
