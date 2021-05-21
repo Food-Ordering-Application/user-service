@@ -142,7 +142,7 @@ const generateSignUpLink = async (
 
     return href;
   } catch (e) {
-    throw new Error('Cannot connect to PayPal - ' + e.message);
+    throw new Error('Error when generate sign up link - ' + e.message);
   }
 };
 
@@ -163,10 +163,10 @@ const getMerchantIdInPayPal = async (
   };
 
   try {
-    const { data } = (await httpService
+    const result = (await httpService
       .get(GET_MERCHANT_IN_URL, queryConfig)
       .toPromise()) as any;
-
+    const { data } = result;
     const { merchant_id } = data as {
       merchant_id: string;
     };
@@ -177,7 +177,7 @@ const getMerchantIdInPayPal = async (
 
     return merchant_id;
   } catch (e) {
-    throw new Error('Cannot connect to PayPal - ' + e.message);
+    throw new Error('Error when get MerchantIdInPayPal - ' + e.message);
   }
 };
 
@@ -204,7 +204,7 @@ const getOnboardStatus = async (
 
     return data as IPayPalOnboardStatusResponse;
   } catch (e) {
-    throw new Error('Cannot connect to PayPal - ' + e.message);
+    throw new Error('Error when get onboard status - ' + e.message);
   }
 };
 
