@@ -161,7 +161,6 @@ const getMerchantIdInPayPal = async (
       Authorization: `Bearer ${token}`,
     },
   };
-
   try {
     const result = (await httpService
       .get(GET_MERCHANT_IN_URL, queryConfig)
@@ -212,5 +211,5 @@ export const PayPalClient = {
   generateSignUpLink,
   getMerchantIdInPayPal,
   getOnboardStatus,
-  PartnerId: process.env.PAYPAL_PARTNER_ID,
+  PartnerId: (): string => process.env.PAYPAL_PARTNER_ID,
 };

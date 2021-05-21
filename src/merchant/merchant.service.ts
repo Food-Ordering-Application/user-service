@@ -514,7 +514,7 @@ export class MerchantService {
 
         try {
           merchantIdInPayPal = await PayPalClient.getMerchantIdInPayPal(
-            PayPalClient.PartnerId,
+            PayPalClient.PartnerId(),
             restaurantId,
             this.httpService,
           );
@@ -533,7 +533,7 @@ export class MerchantService {
       }
 
       const onboardStatusResponse = await PayPalClient.getOnboardStatus(
-        PayPalClient.PartnerId,
+        PayPalClient.PartnerId(),
         paypal.merchantIdInPayPal,
         this.httpService,
       );
@@ -589,7 +589,7 @@ export class MerchantService {
         status: HttpStatus.OK,
         message: '',
         data: {
-          isOnboard: false,
+          isOnboard: paypal.isOnboard,
           message: PayPalOnboardStatus.ONBOARD,
         },
       };
