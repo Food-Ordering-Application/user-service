@@ -1,23 +1,47 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpService,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { RESTAURANT_SERVICE } from './../constants';
-import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { FetchRestaurantProfilesDto } from './dto/fetch-restaurants-of-merchant.dto';
-import { MerchantDto } from './dto/merchant.dto';
-import { RestaurantProfileDto } from './dto/restaurant-profile.dto';
-import { VerifyPosAppKeyDto } from './dto/verify-pos-app-key.dto';
-import { VerifyRestaurantDto } from './dto/verify-restaurant.dto';
-import { Merchant } from './entities/merchant.entity';
-import { RestaurantProfile } from './entities/restaurant-profile.entity';
+import {
+  AddPaypalPaymentDto,
+  CreateMerchantDto,
+  FetchPaymentDto,
+  FetchRestaurantProfilesDto,
+  GetPayPalOnboardStatusDto,
+  GetPayPalSignUpLinkDto,
+  MerchantDto,
+  PaymentDto,
+  RestaurantProfileDto,
+  VerifyPosAppKeyDto,
+  VerifyRestaurantDto,
+} from './dto';
+import {
+  Merchant,
+  Payment,
+  PayPalPayment,
+  RestaurantProfile,
+} from './entities';
+import { PayPalOnboardStatus } from './enums/paypal-onboard-status';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import { RestaurantProfileUpdatedEventPayload } from './events/restaurant-profile-updated.event';
-import { IMerchantServiceFetchRestaurantProfilesResponse } from './interfaces/merchant-service-fetch-restaurant-profiles-response.interface';
-import { IMerchantServiceResponse } from './interfaces/merchant-service-response.interface';
-
+import { PayPalClient } from './helpers/paypal-client';
+import {
+  IGetPayPalOnboardStatusResponse,
+  IGetPayPalSignUpLinkResponse,
+  IMerchantServiceAddPaypalPaymentResponse,
+  IMerchantServiceFetchPaymentOfRestaurantResponse,
+  IMerchantServiceFetchRestaurantProfilesResponse,
+  IMerchantServiceResponse,
+} from './interfaces';
 @Injectable()
 export class MerchantService {
   private readonly logger = new Logger('MerchantService');
@@ -27,8 +51,13 @@ export class MerchantService {
     private merchantsRepository: Repository<Merchant>,
     @InjectRepository(RestaurantProfile)
     private restaurantProfileRepository: Repository<RestaurantProfile>,
+    @InjectRepository(Payment)
+    private paymentRepository: Repository<Payment>,
+    @InjectRepository(PayPalPayment)
+    private paypalPaymentRepository: Repository<PayPalPayment>,
     @Inject(RESTAURANT_SERVICE)
     private restaurantServiceClient: ClientProxy,
+    private httpService: HttpService,
   ) {}
 
   async create(createMerchantDto: CreateMerchantDto) {
@@ -136,7 +165,14 @@ export class MerchantService {
       isBanned,
       isVerified,
     });
+    restaurantProfile.payment = this.createNewPayment();
     await this.restaurantProfileRepository.save(restaurantProfile);
+  }
+
+  createNewPayment(): Payment {
+    return this.paymentRepository.create({
+      paypal: this.paypalPaymentRepository.create(),
+    });
   }
 
   async verifyRestaurant(
@@ -305,5 +341,264 @@ export class MerchantService {
   async validateMerchantId(merchantId: string): Promise<boolean> {
     const doesExist = await this.doesMerchantExist(merchantId);
     return doesExist;
+  }
+
+  async fetchPaymentOfRestaurant(
+    fetchPaymentOfRestaurantDto: FetchPaymentDto,
+  ): Promise<IMerchantServiceFetchPaymentOfRestaurantResponse> {
+    const { merchantId, restaurantId } = fetchPaymentOfRestaurantDto;
+    const paymentOfRestaurant = await this.restaurantProfileRepository.findOne(
+      {
+        merchantId: merchantId,
+        restaurantId: restaurantId,
+      },
+      { relations: ['payment'] },
+    );
+
+    if (!paymentOfRestaurant) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+        data: null,
+      };
+    }
+
+    const { payment } = paymentOfRestaurant;
+    if (!payment) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Cannot query payment information',
+        data: null,
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Fetched payment of restaurant successfully',
+      data: {
+        payment: PaymentDto.EntityToDto(payment),
+      },
+    };
+  }
+
+  async addPaypalPaymentToRestaurant(
+    addPaypalPaymentToRestaurantDto: AddPaypalPaymentDto,
+  ): Promise<IMerchantServiceAddPaypalPaymentResponse> {
+    const { merchantId, restaurantId, data } = addPaypalPaymentToRestaurantDto;
+    const { merchantIdInPayPal } = data;
+
+    const paymentOfRestaurant = await this.restaurantProfileRepository.findOne(
+      {
+        merchantId: merchantId,
+        restaurantId: restaurantId,
+      },
+      { relations: ['payment'] },
+    );
+
+    if (!paymentOfRestaurant) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+      };
+    }
+
+    const { payment } = paymentOfRestaurant;
+    if (!payment?.paypal) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Cannot query payment information',
+      };
+    }
+
+    payment.paypal.merchantIdInPayPal = merchantIdInPayPal;
+
+    try {
+      // save to database
+      await this.paypalPaymentRepository.save(payment.paypal);
+      return {
+        status: HttpStatus.OK,
+        message: 'Add Paypal payment successfully',
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e.message,
+      };
+    }
+  }
+
+  async getPayPalSignUpLink(
+    getPayPalSignUpLinkDto: GetPayPalSignUpLinkDto,
+  ): Promise<IGetPayPalSignUpLinkResponse> {
+    const { merchantId, redirectUrl, restaurantId } = getPayPalSignUpLinkDto;
+    try {
+      const actionUrl = await PayPalClient.generateSignUpLink(
+        restaurantId,
+        redirectUrl,
+        this.httpService,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Generate PayPal partner referral sign up link successfully',
+        data: {
+          action_url: actionUrl,
+        },
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e.message,
+        data: null,
+      };
+    }
+  }
+
+  async getPayPalOnboardStatus(
+    getPayPalOnboardStatusDto: GetPayPalOnboardStatusDto,
+  ): Promise<IGetPayPalOnboardStatusResponse> {
+    const { merchantId, restaurantId } = getPayPalOnboardStatusDto;
+    const paymentOfRestaurant = await this.restaurantProfileRepository.findOne(
+      {
+        merchantId: merchantId,
+        restaurantId: restaurantId,
+      },
+      { relations: ['payment'] },
+    );
+
+    if (!paymentOfRestaurant) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant not found',
+        data: null,
+      };
+    }
+
+    const { payment } = paymentOfRestaurant;
+    if (!payment?.paypal) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Cannot query payment information',
+        data: null,
+      };
+    }
+    const { paypal } = payment;
+    const { isOnboard, merchantIdInPayPal } = paypal;
+
+    // already onboard
+    if (isOnboard) {
+      return {
+        status: HttpStatus.OK,
+        message: 'Restaurant was onboard',
+        data: {
+          isOnboard: true,
+          message: PayPalOnboardStatus.ONBOARD,
+        },
+      };
+    }
+    try {
+      // already add merchant Id (not confirm yet)
+      if (!merchantIdInPayPal) {
+        let merchantIdInPayPal: string = null;
+
+        try {
+          merchantIdInPayPal = await PayPalClient.getMerchantIdInPayPal(
+            PayPalClient.PartnerId(),
+            restaurantId,
+            this.httpService,
+          );
+        } catch (e) {
+          return {
+            status: HttpStatus.OK,
+            message: e.message + '. User may not click and confirm yet.',
+            data: {
+              isOnboard: false,
+              message: PayPalOnboardStatus.TRY_AGAIN,
+            },
+          };
+        }
+
+        paypal.merchantIdInPayPal = merchantIdInPayPal;
+      }
+
+      const onboardStatusResponse = await PayPalClient.getOnboardStatus(
+        PayPalClient.PartnerId(),
+        paypal.merchantIdInPayPal,
+        this.httpService,
+      );
+
+      const {
+        payments_receivable,
+        primary_email_confirmed,
+        oauth_integrations,
+      } = onboardStatusResponse;
+
+      if (!payments_receivable) {
+        return {
+          status: HttpStatus.OK,
+          message: 'PayPal account problem',
+          data: {
+            isOnboard: false,
+            message: PayPalOnboardStatus.SELLER_CANNOT_RECEIVE_PAYMENT,
+          },
+        };
+      }
+
+      if (!primary_email_confirmed) {
+        return {
+          status: HttpStatus.OK,
+          message: 'PayPal account problem',
+          data: {
+            isOnboard: false,
+            message: PayPalOnboardStatus.SELLER_EMAIL_WAS_NOT_CONFIRMED,
+          },
+        };
+      }
+
+      const didSellerGrantPermission =
+        oauth_integrations &&
+        oauth_integrations.length &&
+        oauth_integrations[0].oauth_third_party?.length;
+
+      if (!didSellerGrantPermission) {
+        return {
+          status: HttpStatus.OK,
+          message: 'PayPal account problem. User did not grant permission',
+          data: {
+            isOnboard: false,
+            message: PayPalOnboardStatus.SELLER_DID_NOT_GRANT_PERMISSION,
+          },
+        };
+      }
+
+      paypal.isOnboard = true;
+      await this.paypalPaymentRepository.save(paypal);
+
+      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
+        restaurantId,
+        data: {
+          merchantIdInPayPal,
+        },
+      };
+
+      this.restaurantServiceClient.emit(
+        { event: 'restaurant_profile_updated' },
+        restaurantProfileUpdatedEventPayload,
+      );
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Restaurant was onboard',
+        data: {
+          isOnboard: paypal.isOnboard,
+          message: PayPalOnboardStatus.ONBOARD,
+        },
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e.message,
+        data: null,
+      };
+    }
   }
 }
