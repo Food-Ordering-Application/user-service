@@ -434,7 +434,7 @@ export class MerchantService {
     } catch (e) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: e,
+        message: e.message,
       };
     }
   }
@@ -459,7 +459,7 @@ export class MerchantService {
     } catch (e) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: e,
+        message: e.message,
         data: null,
       };
     }
@@ -521,7 +521,7 @@ export class MerchantService {
         } catch (e) {
           return {
             status: HttpStatus.OK,
-            message: e,
+            message: e.message,
             data: {
               isOnboard: false,
               message: PayPalOnboardStatus.TRY_AGAIN,
@@ -596,7 +596,7 @@ export class MerchantService {
     } catch (e) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: e,
+        message: e.message,
         data: null,
       };
     }
