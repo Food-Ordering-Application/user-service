@@ -8,3 +8,6 @@ export { DeleteCustomerAddressDto } from './delete-customer-address.dto';
 export { GetListCustomerAddressDto } from './get-list-customer-address.dto';
 export { GetDefaultCustomerAddressInfoDto } from './get-customer-address.dto';
 export { UpdateDefaultCustomerAddressDto } from './update-default-customer-address.dto';
+export { SendResetPasswordEmailDto } from './send-reset-password-email.dto';
+export { GetCustomerResetPasswordTokenDto } from './get-customer-reset-password-token.dto';
+export { UpdateCustomerPasswordDto } from './update-customer-password.dto';

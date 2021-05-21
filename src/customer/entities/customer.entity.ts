@@ -39,6 +39,12 @@ export class Customer {
   @Column({ nullable: true })
   verifyPhoneNumberOTP: string;
 
+  @Column({ nullable: true })
+  resetPasswordToken: string;
+  // Thời gian token reset mật khẩu hết tác dụng
+  @Column({ nullable: true })
+  resetPasswordTokenExpiration: number;
+
   @OneToMany(
     () => CustomerAddress,
     (customerAddress) => customerAddress.customer,

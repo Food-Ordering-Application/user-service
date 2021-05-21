@@ -11,6 +11,9 @@ import {
   VerifyCustomerPhoneNumberDto,
   GetDefaultCustomerAddressInfoDto,
   UpdateDefaultCustomerAddressDto,
+  SendResetPasswordEmailDto,
+  GetCustomerResetPasswordTokenDto,
+  UpdateCustomerPasswordDto,
 } from './dto';
 import {
   ICustomerAddressesResponse,
@@ -18,6 +21,8 @@ import {
   ICustomerResponse,
   ICustomerSendOTPVerifyResponse,
   IGetAddressResponse,
+  IGetCustomerResetPasswordTokenResponse,
+  ISimpleResponse,
 } from './interfaces';
 
 @Controller()
@@ -118,6 +123,39 @@ export class CustomerController {
   ): Promise<ICustomerAddressResponse> {
     return this.customerService.updateDefaultCustomerAddress(
       updateDefaultCustomerAddressDto,
+    );
+  }
+
+  //! Gửi email đặt lại mật khẩu
+  @MessagePattern('sendResetPasswordEmail')
+  sendResetPasswordEmail(
+    @Payload()
+    sendResetPasswordEmailDto: SendResetPasswordEmailDto,
+  ): Promise<ISimpleResponse> {
+    return this.customerService.sendResetPasswordEmail(
+      sendResetPasswordEmailDto,
+    );
+  }
+
+  //! Lấy thông tin customer dựa trên resetPasswordToken
+  @MessagePattern('getCustomerResetPasswordToken')
+  getCustomerResetPasswordToken(
+    @Payload()
+    getCustomerResetPasswordTokenDto: GetCustomerResetPasswordTokenDto,
+  ): Promise<IGetCustomerResetPasswordTokenResponse> {
+    return this.customerService.getCustomerResetPasswordToken(
+      getCustomerResetPasswordTokenDto,
+    );
+  }
+
+  //! Update password customer
+  @MessagePattern('updateCustomerPassword')
+  updateCustomerPassword(
+    @Payload()
+    updateCustomerPasswordDto: UpdateCustomerPasswordDto,
+  ): Promise<ISimpleResponse> {
+    return this.customerService.updateCustomerPassword(
+      updateCustomerPasswordDto,
     );
   }
 }

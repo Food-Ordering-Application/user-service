@@ -10,18 +10,52 @@ import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number
 import {
   CreateCustomerAddressDto,
   DeleteCustomerAddressDto,
+  GetCustomerResetPasswordTokenDto,
   GetDefaultCustomerAddressInfoDto,
   GetListCustomerAddressDto,
+  SendResetPasswordEmailDto,
   UpdateCustomerAddressDto,
+  UpdateCustomerPasswordDto,
   UpdateDefaultCustomerAddressDto,
 } from './dto';
 import {
   ICustomerAddressesResponse,
   ICustomerAddressResponse,
   IGetAddressResponse,
+  IGetCustomerResetPasswordTokenResponse,
+  ISimpleResponse,
 } from './interfaces';
 import { CustomerAddress } from './entities';
+import { v4 as uuidv4 } from 'uuid';
+import { transporter } from './config/nodemailer.config';
+import * as bcrypt from 'bcrypt';
 
+const RESET_PASSWORD_TIMEOUT_EXPIRATION = 5 * 36000000;
+
+const sendMail = (mailOptions) => {
+  transporter.sendMail(mailOptions, (err, data) => {
+    if (err) {
+      console.log('Lỗi khi gửi mail', err);
+      return false;
+    } else {
+      console.log('Email đã được gửi!');
+      return true;
+    }
+  });
+};
+
+const sendResetPasswordEmail = (resetToken, email) => {
+  const mailOptions = {
+    from: process.env.HOST_EMAIL,
+    to: email,
+    subject: 'Đặt lại mật khẩu',
+    html: `
+    <p>Bạn đã yêu cầu đặt lại mật khẩu</p>
+    <p>Vui lòng nhấn vào <a href="${process.env.HOST_URL}/reset-password/${resetToken}">link</a> sau để đặt lại mật khẩu</p>
+    `,
+  };
+  sendMail(mailOptions);
+};
 @Injectable()
 export class CustomerService {
   private readonly logger = new Logger('CustomerService');
@@ -403,6 +437,116 @@ export class CustomerService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         address: null,
+      };
+    }
+  }
+
+  async sendResetPasswordEmail(
+    sendResetPasswordEmailDto: SendResetPasswordEmailDto,
+  ): Promise<ISimpleResponse> {
+    try {
+      const { email } = sendResetPasswordEmailDto;
+      //TODO: Tạo unique resetToken
+      const resetToken = uuidv4();
+      //TODO: Update trường resetPasswordToken và resetPasswordTokenExpiration
+      const customer = await this.customerRepository.findOne({ email: email });
+      customer.resetPasswordToken = resetToken;
+      customer.resetPasswordTokenExpiration =
+        Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION;
+      this.customerRepository.save(customer);
+      //TODO: Gửi email cho customer đó
+      sendResetPasswordEmail(resetToken, email);
+      return {
+        status: HttpStatus.OK,
+        message: 'Send reset password email successfully',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async getCustomerResetPasswordToken(
+    getCustomerResetPasswordTokenDto: GetCustomerResetPasswordTokenDto,
+  ): Promise<IGetCustomerResetPasswordTokenResponse> {
+    try {
+      const { resetToken } = getCustomerResetPasswordTokenDto;
+      const customer = await this.customerRepository
+        .createQueryBuilder('cus')
+        .where('cus.resetPasswordToken = :resetToken', {
+          resetToken: resetToken,
+        })
+        .andWhere('cus.resetPasswordTokenExpiration > :now', {
+          now: Date.now(),
+        })
+        .getOne();
+
+      if (!customer) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message:
+            'User not found with associated reset token or reset token has expired',
+          customerId: null,
+        };
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Found customer associated',
+        customerId: customer.id,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        customerId: null,
+      };
+    }
+  }
+
+  async updateCustomerPassword(
+    updateCustomerPasswordDto: UpdateCustomerPasswordDto,
+  ): Promise<ISimpleResponse> {
+    try {
+      const { resetToken, password, customerId } = updateCustomerPasswordDto;
+      const customer = await this.customerRepository
+        .createQueryBuilder('cus')
+        .where('cus.resetPasswordToken = :resetToken', {
+          resetToken: resetToken,
+        })
+        .andWhere('cus.resetPasswordTokenExpiration > :now', {
+          now: Date.now(),
+        })
+        .andWhere('cus.id = :customerId', { customerId: customerId })
+        .getOne();
+
+      if (!customer) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message:
+            'User not found with associated reset token or reset token has expired',
+        };
+      }
+
+      const hashPassword = await bcrypt.hash(password, 12);
+      customer.password = hashPassword;
+      customer.resetPasswordToken = null;
+      customer.resetPasswordTokenExpiration = null;
+      await this.customerRepository.save(customer);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Update customer password successfully',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
       };
     }
   }
