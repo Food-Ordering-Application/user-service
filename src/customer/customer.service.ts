@@ -15,6 +15,7 @@ import {
   GetListCustomerAddressDto,
   SendResetPasswordEmailDto,
   UpdateCustomerAddressDto,
+  UpdateCustomerInfoDto,
   UpdateCustomerPasswordDto,
   UpdateDefaultCustomerAddressDto,
 } from './dto';
@@ -24,6 +25,7 @@ import {
   IGetAddressResponse,
   IGetCustomerResetPasswordTokenResponse,
   ISimpleResponse,
+  IUpdateCustomerInfoResponse,
 } from './interfaces';
 import { CustomerAddress } from './entities';
 import { v4 as uuidv4 } from 'uuid';
@@ -44,7 +46,7 @@ const sendMail = (mailOptions) => {
   });
 };
 
-const sendResetPasswordEmail = (resetToken, email) => {
+const sendRsPasswordEmail = (resetToken, email) => {
   const mailOptions = {
     from: process.env.HOST_EMAIL,
     to: email,
@@ -453,9 +455,12 @@ export class CustomerService {
       customer.resetPasswordToken = resetToken;
       customer.resetPasswordTokenExpiration =
         Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION;
-      this.customerRepository.save(customer);
+      await this.customerRepository.save(customer);
+
+      console.log(resetToken);
+      console.log(Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION);
       //TODO: Gửi email cho customer đó
-      sendResetPasswordEmail(resetToken, email);
+      sendRsPasswordEmail(resetToken, email);
       return {
         status: HttpStatus.OK,
         message: 'Send reset password email successfully',
@@ -513,6 +518,7 @@ export class CustomerService {
   ): Promise<ISimpleResponse> {
     try {
       const { resetToken, password, customerId } = updateCustomerPasswordDto;
+      console.log(resetToken, password, customerId);
       const customer = await this.customerRepository
         .createQueryBuilder('cus')
         .where('cus.resetPasswordToken = :resetToken', {
@@ -542,6 +548,65 @@ export class CustomerService {
         status: HttpStatus.OK,
         message: 'Update customer password successfully',
       };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async updateCustomerInfo(
+    updateCustomerInfoDto: UpdateCustomerInfoDto,
+  ): Promise<IUpdateCustomerInfoResponse> {
+    try {
+      const { customerId, avatar, email, gender, name } = updateCustomerInfoDto;
+
+      const customer = await this.customerRepository.findOne({
+        id: customerId,
+      });
+
+      if (!customer) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Customer not found',
+        };
+      }
+
+      if (avatar) {
+        customer.avatar = avatar;
+        await this.customerRepository.save(customer);
+        return {
+          status: HttpStatus.OK,
+          message: 'Update customer avatar successfully',
+          avatar: avatar,
+        };
+      } else if (email) {
+        customer.email = email;
+        await this.customerRepository.save(customer);
+        return {
+          status: HttpStatus.OK,
+          message: 'Update customer email successfully',
+          email: email,
+        };
+      } else if (gender) {
+        customer.gender = gender;
+        await this.customerRepository.save(customer);
+        return {
+          status: HttpStatus.OK,
+          message: 'Update customer gender successfully',
+          gender: gender,
+        };
+      } else if (name) {
+        customer.name = name;
+        await this.customerRepository.save(customer);
+        return {
+          status: HttpStatus.OK,
+          message: 'Update customer name successfully',
+          name: name,
+        };
+      }
     } catch (error) {
       this.logger.error(error);
       return {

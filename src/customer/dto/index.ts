@@ -11,3 +11,4 @@ export { UpdateDefaultCustomerAddressDto } from './update-default-customer-addre
 export { SendResetPasswordEmailDto } from './send-reset-password-email.dto';
 export { GetCustomerResetPasswordTokenDto } from './get-customer-reset-password-token.dto';
 export { UpdateCustomerPasswordDto } from './update-customer-password.dto';
+export { UpdateCustomerInfoDto } from './update-customer-info.dto';

@@ -42,7 +42,7 @@ export class Customer {
   @Column({ nullable: true })
   resetPasswordToken: string;
   // Thời gian token reset mật khẩu hết tác dụng
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'bigint' })
   resetPasswordTokenExpiration: number;
 
   @OneToMany(

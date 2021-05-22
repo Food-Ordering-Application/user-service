@@ -14,6 +14,7 @@ import {
   SendResetPasswordEmailDto,
   GetCustomerResetPasswordTokenDto,
   UpdateCustomerPasswordDto,
+  UpdateCustomerInfoDto,
 } from './dto';
 import {
   ICustomerAddressesResponse,
@@ -23,6 +24,7 @@ import {
   IGetAddressResponse,
   IGetCustomerResetPasswordTokenResponse,
   ISimpleResponse,
+  IUpdateCustomerInfoResponse,
 } from './interfaces';
 
 @Controller()
@@ -157,5 +159,14 @@ export class CustomerController {
     return this.customerService.updateCustomerPassword(
       updateCustomerPasswordDto,
     );
+  }
+
+  //! Update customer info
+  @MessagePattern('updateCustomerInfo')
+  updateCustomerInfo(
+    @Payload()
+    updateCustomerInfoDto: UpdateCustomerInfoDto,
+  ): Promise<IUpdateCustomerInfoResponse> {
+    return this.customerService.updateCustomerInfo(updateCustomerInfoDto);
   }
 }
