@@ -563,6 +563,11 @@ export class CustomerService {
     try {
       const { customerId, avatar, email, gender, name } = updateCustomerInfoDto;
 
+      console.log(customerId);
+      console.log(avatar);
+      console.log(email);
+      console.log(gender);
+      console.log(name);
       const customer = await this.customerRepository.findOne({
         id: customerId,
       });
