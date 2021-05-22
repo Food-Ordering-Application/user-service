@@ -53,7 +53,7 @@ const sendRsPasswordEmail = (resetToken, email) => {
     subject: 'Đặt lại mật khẩu',
     html: `
     <p>Bạn đã yêu cầu đặt lại mật khẩu</p>
-    <p>Vui lòng nhấn vào <a href="${process.env.HOST_URL}/reset-password/${resetToken}">link</a> sau để đặt lại mật khẩu</p>
+    <p>Vui lòng nhấn vào <a href="${process.env.HOST_URL}/reset-password/verify/${resetToken}">link</a> sau để đặt lại mật khẩu</p>
     `,
   };
   sendMail(mailOptions);
