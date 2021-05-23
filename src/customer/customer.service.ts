@@ -481,6 +481,7 @@ export class CustomerService {
   ): Promise<IGetCustomerResetPasswordTokenResponse> {
     try {
       const { resetToken } = getCustomerResetPasswordTokenDto;
+      console.log('resetToken', resetToken);
       const customer = await this.customerRepository
         .createQueryBuilder('cus')
         .where('cus.resetPasswordToken = :resetToken', {
@@ -490,6 +491,7 @@ export class CustomerService {
           now: Date.now(),
         })
         .getOne();
+      console.log(customer);
 
       if (!customer) {
         return {
@@ -520,7 +522,9 @@ export class CustomerService {
   ): Promise<ISimpleResponse> {
     try {
       const { resetToken, password, customerId } = updateCustomerPasswordDto;
-      console.log(resetToken, password, customerId);
+      console.log('resetToken', resetToken);
+      console.log('password', password);
+      console.log('customerId', customerId);
       const customer = await this.customerRepository
         .createQueryBuilder('cus')
         .where('cus.resetPasswordToken = :resetToken', {
@@ -540,8 +544,9 @@ export class CustomerService {
         };
       }
 
-      const hashPassword = await bcrypt.hash(password, 12);
-      customer.password = hashPassword;
+      console.log('Customer', customer);
+
+      customer.password = password;
       customer.resetPasswordToken = null;
       customer.resetPasswordTokenExpiration = null;
       await this.customerRepository.save(customer);
