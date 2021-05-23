@@ -458,6 +458,7 @@ export class CustomerService {
       await this.customerRepository.save(customer);
 
       console.log(resetToken);
+      console.log(resetToken);
       console.log(Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION);
       //TODO: Gửi email cho customer đó
       sendRsPasswordEmail(resetToken, email);
