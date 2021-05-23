@@ -35,6 +35,7 @@ import * as bcrypt from 'bcrypt';
 const RESET_PASSWORD_TIMEOUT_EXPIRATION = 5 * 36000000;
 
 const sendMail = (mailOptions) => {
+  console.log('Transporter', transporter);
   transporter.sendMail(mailOptions, (err, data) => {
     if (err) {
       console.log('Lỗi khi gửi mail', err);
