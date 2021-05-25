@@ -31,6 +31,7 @@ import { CustomerAddress } from './entities';
 import { v4 as uuidv4 } from 'uuid';
 import { transporter } from './config/nodemailer.config';
 import { google } from 'googleapis';
+import { VerifyCustomerEmailDto } from './dto/verify-customer-email.dto';
 
 const RESET_PASSWORD_TIMEOUT_EXPIRATION = 5 * 36000000;
 
@@ -55,6 +56,19 @@ const sendRsPasswordEmail = (resetToken, email) => {
     html: `
     <p>Bạn đã yêu cầu đặt lại mật khẩu</p>
     <p>Vui lòng nhấn vào <a href="${process.env.HOST_URL}/reset-password/verify/${resetToken}">link</a> sau để đặt lại mật khẩu</p>
+    `,
+  };
+  sendMail(mailOptions);
+};
+
+const sendVerifyEmail = (verifyEmailToken, email) => {
+  const mailOptions = {
+    from: process.env.HOST_EMAIL,
+    to: email,
+    subject: 'Kích hoạt email',
+    html: `
+    <p>Bạn đã yêu cầu kích hoạt email</p>
+    <p>Vui lòng nhấn vào <a href="${process.env.HOST_URL}/add-email/verify/${verifyEmailToken}">link</a> sau để kích hoạt email</p>
     `,
   };
   sendMail(mailOptions);
@@ -607,12 +621,19 @@ export class CustomerService {
         });
 
         if (!findCustomer) {
-          customer.email = email;
+          //TODO: Tạo unique emailToken
+          const verifyEmailToken = uuidv4();
+          //TODO: Update trường verifyEmailToken và verifyEmailTokenExpiration
+          customer.verifyEmailToken = verifyEmailToken;
+          customer.verifyEmailTokenExpiration =
+            Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION;
           await this.customerRepository.save(customer);
+
+          //TODO: Gửi email cho customer đó
+          sendVerifyEmail(verifyEmailToken, email);
           return {
             status: HttpStatus.OK,
-            message: 'Update customer email successfully',
-            email: email,
+            message: 'Send email verify successfully',
           };
         } else {
           return {
@@ -637,6 +658,47 @@ export class CustomerService {
           name: name,
         };
       }
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async verifyCustomerEmail(
+    verifyCustomerEmailDto: VerifyCustomerEmailDto,
+  ): Promise<ISimpleResponse> {
+    try {
+      const { verifyEmailToken } = verifyCustomerEmailDto;
+      const customer = await this.customerRepository
+        .createQueryBuilder('cus')
+        .where('cus.verifyEmailToken = :verifyEmailToken', {
+          verifyEmailToken: verifyEmailToken,
+        })
+        .andWhere('cus.verifyEmailTokenExpiration > :now', {
+          now: Date.now(),
+        })
+        .getOne();
+      console.log(customer);
+
+      if (!customer) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message:
+            'User not found with associated email verify token or email verify token has expired',
+        };
+      }
+
+      customer.verifyEmailToken = null;
+      customer.verifyEmailTokenExpiration = null;
+      customer.isEmailVerified = true;
+      await this.customerRepository.save(customer);
+      return {
+        status: HttpStatus.OK,
+        message: 'Verify customer email successfully',
+      };
     } catch (error) {
       this.logger.error(error);
       return {

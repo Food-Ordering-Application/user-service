@@ -16,6 +16,7 @@ import {
   UpdateCustomerPasswordDto,
   UpdateCustomerInfoDto,
 } from './dto';
+import { VerifyCustomerEmailDto } from './dto/verify-customer-email.dto';
 import {
   ICustomerAddressesResponse,
   ICustomerAddressResponse,
@@ -168,5 +169,14 @@ export class CustomerController {
     updateCustomerInfoDto: UpdateCustomerInfoDto,
   ): Promise<IUpdateCustomerInfoResponse> {
     return this.customerService.updateCustomerInfo(updateCustomerInfoDto);
+  }
+
+  //! Lấy thông tin customer dựa trên verifyEmailToken
+  @MessagePattern('verifyCustomerEmail')
+  verifyCustomerEmail(
+    @Payload()
+    verifyCustomerEmailDto: VerifyCustomerEmailDto,
+  ): Promise<ISimpleResponse> {
+    return this.customerService.verifyCustomerEmail(verifyCustomerEmailDto);
   }
 }

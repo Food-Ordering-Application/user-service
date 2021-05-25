@@ -40,6 +40,13 @@ export class Customer {
   sessionInfo: string;
 
   @Column({ nullable: true })
+  verifyEmailToken: string;
+  @Column({ nullable: true, type: 'bigint' })
+  verifyEmailTokenExpiration: number;
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ nullable: true })
   resetPasswordToken: string;
   // Thời gian token reset mật khẩu hết tác dụng
   @Column({ nullable: true, type: 'bigint' })
