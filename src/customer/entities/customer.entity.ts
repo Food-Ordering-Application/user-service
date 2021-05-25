@@ -30,7 +30,7 @@ export class Customer {
   @Column({ nullable: true })
   avatar: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   email: string;
 
   @Column({ default: false })

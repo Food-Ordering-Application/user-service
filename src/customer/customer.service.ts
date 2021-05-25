@@ -522,9 +522,6 @@ export class CustomerService {
   ): Promise<ISimpleResponse> {
     try {
       const { resetToken, password, customerId } = updateCustomerPasswordDto;
-      console.log('resetToken', resetToken);
-      console.log('password', password);
-      console.log('customerId', customerId);
       const customer = await this.customerRepository
         .createQueryBuilder('cus')
         .where('cus.resetPasswordToken = :resetToken', {
@@ -543,8 +540,6 @@ export class CustomerService {
             'User not found with associated reset token or reset token has expired',
         };
       }
-
-      console.log('Customer', customer);
 
       customer.password = password;
       customer.resetPasswordToken = null;
@@ -569,12 +564,6 @@ export class CustomerService {
   ): Promise<IUpdateCustomerInfoResponse> {
     try {
       const { customerId, avatar, email, gender, name } = updateCustomerInfoDto;
-
-      console.log(customerId);
-      console.log(avatar);
-      console.log(email);
-      console.log(gender);
-      console.log(name);
       const customer = await this.customerRepository.findOne({
         id: customerId,
       });
@@ -595,13 +584,25 @@ export class CustomerService {
           avatar: avatar,
         };
       } else if (email) {
-        customer.email = email;
-        await this.customerRepository.save(customer);
-        return {
-          status: HttpStatus.OK,
-          message: 'Update customer email successfully',
+        //TODO: Tìm xem có acccount customer nào liên kết với email này hay chưa
+        const findCustomer = await this.customerRepository.findOne({
           email: email,
-        };
+        });
+
+        if (!findCustomer) {
+          customer.email = email;
+          await this.customerRepository.save(customer);
+          return {
+            status: HttpStatus.OK,
+            message: 'Update customer email successfully',
+            email: email,
+          };
+        } else {
+          return {
+            status: HttpStatus.CONFLICT,
+            message: 'Email have been registered',
+          };
+        }
       } else if (gender) {
         customer.gender = gender;
         await this.customerRepository.save(customer);
