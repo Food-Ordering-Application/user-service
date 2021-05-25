@@ -1,4 +1,4 @@
 export class SendPhoneNumberOTPVerifyDto {
-  userId: string;
   phoneNumber: string;
+  recaptchaToken: string;
 }

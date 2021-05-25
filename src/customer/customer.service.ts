@@ -30,7 +30,7 @@ import {
 import { CustomerAddress } from './entities';
 import { v4 as uuidv4 } from 'uuid';
 import { transporter } from './config/nodemailer.config';
-import * as bcrypt from 'bcrypt';
+import { google } from 'googleapis';
 
 const RESET_PASSWORD_TIMEOUT_EXPIRATION = 5 * 36000000;
 
@@ -159,15 +159,27 @@ export class CustomerService {
   async sendPhoneNumberOTPVerify(
     sendPhoneNumberOTPVerifyDto: SendPhoneNumberOTPVerifyDto,
   ): Promise<ICustomerSendOTPVerifyResponse> {
-    const otp = '123456';
-    this.logger.log(otp);
     try {
-      // Tìm ra user lưu lại otp
+      const { phoneNumber, recaptchaToken } = sendPhoneNumberOTPVerifyDto;
+
+      const identityToolkit = google.identitytoolkit({
+        auth: process.env.GOOGLE_API_KEY,
+        version: 'v3',
+      });
+
+      const response = await identityToolkit.relyingparty.sendVerificationCode({
+        requestBody: { phoneNumber, recaptchaToken },
+      });
+
+      // save sessionInfo into db. You will need this to verify the SMS code
+      const sessionInfo = response.data.sessionInfo;
+
+      // Tìm ra user lưu lại sessionInfo
       const customer = await this.customerRepository.findOne({
         phoneNumber: sendPhoneNumberOTPVerifyDto.phoneNumber,
       });
-      customer.verifyPhoneNumberOTP = otp;
-      this.customerRepository.save(customer);
+      customer.sessionInfo = sessionInfo;
+      await this.customerRepository.save(customer);
       return {
         status: HttpStatus.OK,
         message: 'Otp sent successfully',
@@ -185,23 +197,28 @@ export class CustomerService {
     verifyCustomerPhoneNumberDto: VerifyCustomerPhoneNumberDto,
   ): Promise<ICustomerSendOTPVerifyResponse> {
     try {
+      const { otp, phoneNumber } = verifyCustomerPhoneNumberDto;
       // Tìm ra customer dựa trên phoneNumber
       const customer = await this.customerRepository.findOne({
-        phoneNumber: verifyCustomerPhoneNumberDto.phoneNumber,
+        phoneNumber: phoneNumber,
       });
-      // Xét xem otp có khớp không
-      if (customer.verifyPhoneNumberOTP === verifyCustomerPhoneNumberDto.otp) {
-        customer.verifyPhoneNumberOTP = null;
-        customer.isPhoneNumberVerified = true;
-        this.customerRepository.save(customer);
-        return {
-          status: HttpStatus.OK,
-          message: 'Verify customer phoneNumber successfully',
-        };
-      }
+
+      const identityToolkit = google.identitytoolkit({
+        auth: 'GCP_API_KEY',
+        version: 'v3',
+      });
+
+      await identityToolkit.relyingparty.verifyPhoneNumber({
+        requestBody: { code: otp, sessionInfo: customer.sessionInfo },
+      });
+
+      //TODO: update flag
+      customer.isPhoneNumberVerified = true;
+      await this.customerRepository.save(customer);
+
       return {
-        status: HttpStatus.UNAUTHORIZED,
-        message: 'OTP not match',
+        status: HttpStatus.OK,
+        message: 'Verify customer phoneNumber successfully',
       };
     } catch (error) {
       this.logger.error(error);

@@ -37,7 +37,7 @@ export class Customer {
   isPhoneNumberVerified: boolean;
 
   @Column({ nullable: true })
-  verifyPhoneNumberOTP: string;
+  sessionInfo: string;
 
   @Column({ nullable: true })
   resetPasswordToken: string;
