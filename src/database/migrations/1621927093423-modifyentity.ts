@@ -9,9 +9,6 @@ export class modifyentity1621927093423 implements MigrationInterface {
       `ALTER TABLE "customer" DROP COLUMN "verifyPhoneNumberOTP"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "customer" ADD "verifyPhoneNumberOTP" character varying`,
-    );
-    await queryRunner.query(
       `ALTER TABLE "customer" ADD "sessionInfo" character varying`,
     );
     await queryRunner.query(
@@ -22,9 +19,6 @@ export class modifyentity1621927093423 implements MigrationInterface {
     );
     await queryRunner.query(
       `ALTER TABLE "customer" ADD "isEmailVerified" boolean NOT NULL DEFAULT false`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "customer" ADD CONSTRAINT "UQ_fdb2f3ad8115da4c7718109a6eb" UNIQUE ("email")`,
     );
     await queryRunner.query(
       `ALTER TABLE "customer" ADD CONSTRAINT "UQ_fdb2f3ad8115da4c7718109a6eb" UNIQUE ("email")`,

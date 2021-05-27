@@ -174,8 +174,10 @@ export class CustomerService {
     sendPhoneNumberOTPVerifyDto: SendPhoneNumberOTPVerifyDto,
   ): Promise<ICustomerSendOTPVerifyResponse> {
     try {
-      const { phoneNumber, recaptchaToken } = sendPhoneNumberOTPVerifyDto;
-
+      console.log('Here');
+      let { phoneNumber } = sendPhoneNumberOTPVerifyDto;
+      const { recaptchaToken } = sendPhoneNumberOTPVerifyDto;
+      console.log(phoneNumber, recaptchaToken);
       const identityToolkit = google.identitytoolkit({
         auth: process.env.GOOGLE_API_KEY,
         version: 'v3',
@@ -189,9 +191,15 @@ export class CustomerService {
       const sessionInfo = response.data.sessionInfo;
 
       // Tìm ra user lưu lại sessionInfo
+      //TODO: Bỏ đi +84
+      phoneNumber = phoneNumber.substring(3);
+      //TODO: Thêm 0 ở đầu
+      phoneNumber = '0' + phoneNumber;
+      console.log('PhoneNumber', phoneNumber);
       const customer = await this.customerRepository.findOne({
-        phoneNumber: sendPhoneNumberOTPVerifyDto.phoneNumber,
+        phoneNumber: phoneNumber,
       });
+      console.log('customer', customer);
       customer.sessionInfo = sessionInfo;
       await this.customerRepository.save(customer);
       return {
@@ -218,7 +226,7 @@ export class CustomerService {
       });
 
       const identityToolkit = google.identitytoolkit({
-        auth: 'GCP_API_KEY',
+        auth: process.env.GOOGLE_API_KEY,
         version: 'v3',
       });
 
@@ -228,6 +236,7 @@ export class CustomerService {
 
       //TODO: update flag
       customer.isPhoneNumberVerified = true;
+      customer.sessionInfo = null;
       await this.customerRepository.save(customer);
 
       return {
@@ -247,12 +256,8 @@ export class CustomerService {
     createCustomerAddressDto: CreateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const {
-        address,
-        customerId,
-        latitude,
-        longtitude,
-      } = createCustomerAddressDto;
+      const { address, customerId, latitude, longtitude } =
+        createCustomerAddressDto;
 
       // Tìm ra customer với customerId
       const customer = await this.customerRepository
@@ -294,13 +299,8 @@ export class CustomerService {
     updateCustomerAddressDto: UpdateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const {
-        address,
-        customerId,
-        latitude,
-        longtitude,
-        customerAddressId,
-      } = updateCustomerAddressDto;
+      const { address, customerId, latitude, longtitude, customerAddressId } =
+        updateCustomerAddressDto;
 
       // Tìm ra customer address và update
       const customerAddress = await this.customerAddressRepository
