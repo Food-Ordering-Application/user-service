@@ -1,26 +1,36 @@
-import { Injectable } from '@nestjs/common';
-import { CreateDeliverDto } from './dto/create-deliver.dto';
-import { UpdateDeliverDto } from './dto/update-deliver.dto';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Driver } from './entities';
+import { IDriverResponse } from './interfaces';
 
 @Injectable()
 export class DeliverService {
-  create(createDeliverDto: CreateDeliverDto) {
-    return 'This action adds a new deliver';
-  }
+  private readonly logger = new Logger('DriverService');
 
-  findAll() {
-    return `This action returns all deliver`;
-  }
+  constructor(
+    @InjectRepository(Driver)
+    private driverRepository: Repository<Driver>,
+  ) {}
 
-  findOne(id: number) {
-    return `This action returns a #${id} deliver`;
-  }
-
-  update(id: number, updateDeliverDto: UpdateDeliverDto) {
-    return `This action updates a #${id} deliver`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} deliver`;
+  //! Tìm kiếm driver bằng số điện thoại
+  async findDriverByPhonenumber(phoneNumber: string): Promise<IDriverResponse> {
+    try {
+      const driver = await this.driverRepository.findOne({
+        phoneNumber: phoneNumber,
+      });
+      return {
+        status: HttpStatus.OK,
+        message: 'Driver was found successfully',
+        user: driver,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        user: null,
+      };
+    }
   }
 }

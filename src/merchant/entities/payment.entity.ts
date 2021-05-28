@@ -5,6 +5,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { DriverPayment } from '../../deliver/entities';
 import { PayPalPayment } from './paypal-payment.entity';
 
 @Entity()
@@ -15,4 +16,7 @@ export class Payment {
   @OneToOne(() => PayPalPayment, { cascade: ['insert', 'update'], eager: true })
   @JoinColumn()
   paypal: PayPalPayment;
+
+  @OneToOne(() => DriverPayment, (driverPayment) => driverPayment.payment)
+  driverPayment: DriverPayment;
 }
