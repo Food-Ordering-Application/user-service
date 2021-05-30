@@ -68,6 +68,8 @@ export class DeliverService {
         vehicleRegistrationCertificateImageUrl;
       driver.password = password;
 
+      await this.driverRepository.save(driver);
+
       return {
         status: HttpStatus.OK,
         message: 'Driver created successfully',
