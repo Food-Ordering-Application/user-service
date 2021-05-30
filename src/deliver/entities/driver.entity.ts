@@ -11,6 +11,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AccountWallet } from './account-wallet.entity';
+import { DriverPaymentInfo } from './driver-payment-info.entity';
+import { DeliveryHistory } from './delivery-history.entity';
 import { DriverPayment } from './driver-payment.entity';
 
 @Entity()
@@ -28,7 +30,7 @@ export class Driver {
   @Column({ nullable: true })
   city?: string;
   @Column({ nullable: true })
-  dateOfBirth?: string;
+  dateOfBirth?: Date;
   @Column({ nullable: true })
   IDNumber?: string;
   @Column({ nullable: true })
@@ -47,8 +49,17 @@ export class Driver {
   @JoinColumn()
   wallet: AccountWallet;
 
+  @OneToMany(
+    () => DriverPaymentInfo,
+    (driverPaymentInfo) => driverPaymentInfo.driver,
+  )
+  driverPaymentInfos: DriverPaymentInfo[];
+
   @OneToMany(() => DriverPayment, (driverPayment) => driverPayment.driver)
   driverPayments: DriverPayment[];
+
+  @OneToMany(() => DeliveryHistory, (deliveryHistory) => deliveryHistory.driver)
+  deliveryHistories: DeliveryHistory[];
 
   private beforeUpdatePassword: string;
   @AfterLoad()

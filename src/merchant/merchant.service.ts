@@ -26,7 +26,7 @@ import {
 } from './dto';
 import {
   Merchant,
-  Payment,
+  PaymentInfo,
   PayPalPayment,
   RestaurantProfile,
 } from './entities';
@@ -51,8 +51,8 @@ export class MerchantService {
     private merchantsRepository: Repository<Merchant>,
     @InjectRepository(RestaurantProfile)
     private restaurantProfileRepository: Repository<RestaurantProfile>,
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
+    @InjectRepository(PaymentInfo)
+    private paymentRepository: Repository<PaymentInfo>,
     @InjectRepository(PayPalPayment)
     private paypalPaymentRepository: Repository<PayPalPayment>,
     @Inject(RESTAURANT_SERVICE)
@@ -61,14 +61,8 @@ export class MerchantService {
   ) {}
 
   async create(createMerchantDto: CreateMerchantDto) {
-    const {
-      username,
-      password,
-      email,
-      phone,
-      fullName,
-      IDNumber,
-    } = createMerchantDto;
+    const { username, password, email, phone, fullName, IDNumber } =
+      createMerchantDto;
     const merchantWithThisUsername = await this.merchantsRepository.findOne({
       username,
     });
@@ -169,7 +163,7 @@ export class MerchantService {
     await this.restaurantProfileRepository.save(restaurantProfile);
   }
 
-  createNewPayment(): Payment {
+  createNewPayment(): PaymentInfo {
     return this.paymentRepository.create({
       paypal: this.paypalPaymentRepository.create(),
     });
@@ -193,12 +187,13 @@ export class MerchantService {
     restaurantProfile.isVerified = true;
     await this.getVerifiedRestaurantProfile(restaurantProfile);
 
-    const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
-      restaurantId,
-      data: {
-        isVerified: true,
-      },
-    };
+    const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload =
+      {
+        restaurantId,
+        data: {
+          isVerified: true,
+        },
+      };
     this.restaurantServiceClient.emit(
       { event: 'restaurant_profile_updated' },
       restaurantProfileUpdatedEventPayload,
@@ -317,13 +312,11 @@ export class MerchantService {
   ): Promise<IMerchantServiceFetchRestaurantProfilesResponse> {
     const { size, page } = fetchRestaurantsOfMerchantDto;
 
-    const [
-      results,
-      total,
-    ] = await this.restaurantProfileRepository.findAndCount({
-      take: size,
-      skip: page * size,
-    });
+    const [results, total] =
+      await this.restaurantProfileRepository.findAndCount({
+        take: size,
+        skip: page * size,
+      });
 
     return {
       status: HttpStatus.OK,
@@ -573,12 +566,13 @@ export class MerchantService {
       paypal.isOnboard = true;
       await this.paypalPaymentRepository.save(paypal);
 
-      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
-        restaurantId,
-        data: {
-          merchantIdInPayPal,
-        },
-      };
+      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload =
+        {
+          restaurantId,
+          data: {
+            merchantIdInPayPal,
+          },
+        };
 
       this.restaurantServiceClient.emit(
         { event: 'restaurant_profile_updated' },

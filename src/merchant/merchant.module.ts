@@ -1,5 +1,5 @@
 import {
-  Payment,
+  PaymentInfo,
   PayPalPayment,
   Merchant,
   RestaurantProfile,
@@ -18,7 +18,7 @@ import { MerchantService } from './merchant.service';
     TypeOrmModule.forFeature([
       Merchant,
       RestaurantProfile,
-      Payment,
+      PaymentInfo,
       PayPalPayment,
     ]),
     ClientsModule.registerAsync([

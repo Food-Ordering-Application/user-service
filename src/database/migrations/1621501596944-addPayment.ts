@@ -1,6 +1,6 @@
 import {
   RestaurantProfile,
-  Payment,
+  PaymentInfo,
   PayPalPayment,
 } from './../../merchant/entities/';
 import { MigrationInterface, QueryRunner } from 'typeorm';
@@ -29,7 +29,7 @@ export class addPayment1621501596944 implements MigrationInterface {
     );
 
     const createNewPayment = () => {
-      return queryRunner.manager.create<Payment>(Payment, {
+      return queryRunner.manager.create<PaymentInfo>(PaymentInfo, {
         paypal: queryRunner.manager.create(PayPalPayment),
       });
     };

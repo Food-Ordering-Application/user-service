@@ -7,7 +7,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Payment } from '../../merchant/entities';
+import { PaymentInfo } from '../../merchant/entities';
 import { EOperationType } from '../enums';
 import { Driver } from './driver.entity';
 

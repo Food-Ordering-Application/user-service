@@ -26,6 +26,7 @@ import {
   IGetCustomerResetPasswordTokenResponse,
   ISimpleResponse,
   IUpdateCustomerInfoResponse,
+  IVerifyCustomerEmail,
 } from './interfaces';
 
 @Controller()
@@ -176,7 +177,7 @@ export class CustomerController {
   verifyCustomerEmail(
     @Payload()
     verifyCustomerEmailDto: VerifyCustomerEmailDto,
-  ): Promise<ISimpleResponse> {
+  ): Promise<IVerifyCustomerEmail> {
     return this.customerService.verifyCustomerEmail(verifyCustomerEmailDto);
   }
 }

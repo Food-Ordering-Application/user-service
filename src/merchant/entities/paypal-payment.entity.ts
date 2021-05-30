@@ -5,7 +5,6 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Payment } from './payment.entity';
 
 @Entity('paypal_payment')
 export class PayPalPayment {

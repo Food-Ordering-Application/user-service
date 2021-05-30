@@ -5,11 +5,11 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { DriverPayment } from '../../deliver/entities';
+import { DriverPaymentInfo } from '../../deliver/entities';
 import { PayPalPayment } from './paypal-payment.entity';
 
 @Entity()
-export class Payment {
+export class PaymentInfo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -17,6 +17,9 @@ export class Payment {
   @JoinColumn()
   paypal: PayPalPayment;
 
-  @OneToOne(() => DriverPayment, (driverPayment) => driverPayment.payment)
-  driverPayment: DriverPayment;
+  @OneToOne(
+    () => DriverPaymentInfo,
+    (driverPaymentInfo) => driverPaymentInfo.paymentInfo,
+  )
+  driverPaymentInfo: DriverPaymentInfo;
 }
