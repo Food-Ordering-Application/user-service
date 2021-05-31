@@ -8,7 +8,9 @@ import {
   DeliveryHistory,
   Driver,
   DriverPayment,
+  DriverPaymentInfo,
 } from './entities';
+import { PaymentInfo, PayPalPayment } from '../merchant/entities';
 
 @Module({
   imports: [
@@ -18,6 +20,9 @@ import {
       AccountTransaction,
       DeliveryHistory,
       DriverPayment,
+      PayPalPayment,
+      PaymentInfo,
+      DriverPaymentInfo,
     ]),
   ],
   controllers: [DeliverController],

@@ -9,4 +9,5 @@ export class RegisterDriverDto {
   identityCardImageUrl: string;
   driverLicenseImageUrl: string;
   vehicleRegistrationCertificateImageUrl: string;
+  merchantIdInPaypal: string;
 }

@@ -1,8 +1,9 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PaymentInfo, PayPalPayment } from '../merchant/entities';
 import { CheckDriverAccountBalanceDto, RegisterDriverDto } from './dto';
-import { AccountWallet, Driver } from './entities';
+import { AccountWallet, Driver, DriverPaymentInfo } from './entities';
 import { EPaymentMethod } from './enums';
 import { ICanDriverAcceptOrderResponse, IDriverResponse } from './interfaces';
 
@@ -18,6 +19,12 @@ export class DeliverService {
     private driverRepository: Repository<Driver>,
     @InjectRepository(AccountWallet)
     private accountWalletRepository: Repository<AccountWallet>,
+    @InjectRepository(PayPalPayment)
+    private paypalPaymentRepository: Repository<PayPalPayment>,
+    @InjectRepository(PaymentInfo)
+    private paymentInfoRepository: Repository<PaymentInfo>,
+    @InjectRepository(DriverPaymentInfo)
+    private driverPaymentInfoRepository: Repository<DriverPaymentInfo>,
   ) {}
 
   //! Tìm kiếm driver bằng số điện thoại
@@ -57,8 +64,22 @@ export class DeliverService {
         password,
         phoneNumber,
         vehicleRegistrationCertificateImageUrl,
+        merchantIdInPaypal,
       } = registerDriverDto;
 
+      //TODO: Tạo bảng AccountWallet
+      const accountWallet = new AccountWallet();
+      accountWallet.mainBalance = 0;
+      accountWallet.depositBalance = 2000000;
+      //TODO: Tạo bảng paypalPayment
+      const paypalPayment = new PayPalPayment();
+      paypalPayment.merchantIdInPayPal = merchantIdInPaypal;
+      await Promise.all([
+        this.accountWalletRepository.save(accountWallet),
+        this.paypalPaymentRepository.save(paypalPayment),
+      ]);
+
+      //TODO: Tạo bảng Driver
       const driver = new Driver();
       driver.IDNumber = IDNumber;
       driver.city = city;
@@ -73,8 +94,21 @@ export class DeliverService {
       driver.vehicleRegistrationCertificateImageUrl =
         vehicleRegistrationCertificateImageUrl;
       driver.password = password;
+      driver.wallet = accountWallet;
+      //TODO: Tạo bảng PaymentInfo
+      const paymentInfo = new PaymentInfo();
+      paymentInfo.paypal = paypalPayment;
+      await Promise.all([
+        this.paymentInfoRepository.save(paymentInfo),
+        this.driverRepository.save(driver),
+      ]);
 
-      await this.driverRepository.save(driver);
+      //TODO: Tạo bảng DriverPaymentInfo
+      const driverPaymentInfo = new DriverPaymentInfo();
+      driverPaymentInfo.driver = driver;
+      driverPaymentInfo.isDefault = true;
+      driverPaymentInfo.paymentInfo = paymentInfo;
+      await this.driverPaymentInfoRepository.save(driverPaymentInfo);
 
       return {
         status: HttpStatus.OK,
