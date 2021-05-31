@@ -35,4 +35,13 @@ export class DeliverController {
       checkDriverAccountBalanceDto,
     );
   }
+
+  //! Lấy sđt, tên, ảnh khuôn mặt, biển số của driver
+  // @MessagePattern('getDriverInformation')
+  // async getDriverInformation(
+  //   @Payload()
+  //   getDriverInformationDto: GetDriverInformationDto,
+  // ): Promise<IGetDriverInformationResponse> {
+  //   return this.deliverService.getDriverInformation(getDriverInformationDto);
+  // }
 }

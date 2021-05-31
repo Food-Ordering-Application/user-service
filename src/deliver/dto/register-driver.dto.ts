@@ -6,6 +6,8 @@ export class RegisterDriverDto {
   city: string;
   dateOfBirth: Date;
   IDNumber: string;
+  licensePlate: string;
+  avatar: string;
   identityCardImageUrl: string;
   driverLicenseImageUrl: string;
   vehicleRegistrationCertificateImageUrl: string;

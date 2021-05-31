@@ -34,6 +34,10 @@ export class Driver {
   @Column({ nullable: true })
   IDNumber?: string;
   @Column({ nullable: true })
+  licensePlate?: string;
+  @Column({ nullable: true })
+  avatar?: string;
+  @Column({ nullable: true })
   identityCardImageUrl?: string;
   @Column({ nullable: true })
   driverLicenseImageUrl?: string;

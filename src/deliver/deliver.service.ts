@@ -65,6 +65,8 @@ export class DeliverService {
         phoneNumber,
         vehicleRegistrationCertificateImageUrl,
         merchantIdInPaypal,
+        licensePlate,
+        avatar,
       } = registerDriverDto;
 
       //TODO: Tạo bảng AccountWallet
@@ -94,6 +96,8 @@ export class DeliverService {
       driver.vehicleRegistrationCertificateImageUrl =
         vehicleRegistrationCertificateImageUrl;
       driver.password = password;
+      driver.licensePlate = licensePlate;
+      driver.avatar = avatar;
       driver.wallet = accountWallet;
       //TODO: Tạo bảng PaymentInfo
       const paymentInfo = new PaymentInfo();
