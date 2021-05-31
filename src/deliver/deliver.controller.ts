@@ -1,9 +1,13 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DeliverService } from './deliver.service';
-import { RegisterDriverDto } from './dto';
+import { GetDriverInformationDto, RegisterDriverDto } from './dto';
 import { CheckDriverAccountBalanceDto } from './dto/check-driver-account-balance.dto';
-import { ICanDriverAcceptOrderResponse, IDriverResponse } from './interfaces';
+import {
+  ICanDriverAcceptOrderResponse,
+  IDriverResponse,
+  IGetDriverInformationResponse,
+} from './interfaces';
 
 @Controller()
 export class DeliverController {
@@ -37,11 +41,11 @@ export class DeliverController {
   }
 
   //! Lấy sđt, tên, ảnh khuôn mặt, biển số của driver
-  // @MessagePattern('getDriverInformation')
-  // async getDriverInformation(
-  //   @Payload()
-  //   getDriverInformationDto: GetDriverInformationDto,
-  // ): Promise<IGetDriverInformationResponse> {
-  //   return this.deliverService.getDriverInformation(getDriverInformationDto);
-  // }
+  @MessagePattern('getDriverInformation')
+  async getDriverInformation(
+    @Payload()
+    getDriverInformationDto: GetDriverInformationDto,
+  ): Promise<IGetDriverInformationResponse> {
+    return this.deliverService.getDriverInformation(getDriverInformationDto);
+  }
 }

@@ -8,3 +8,5 @@ export { ICanDriverAcceptOrderResponse } from './can-driver-accept-order-respons
 export { IInvoice } from './invoice.interface';
 export { IPayment } from './payment.interface';
 export { IPaypalPayment } from './paypal-payment.interface';
+export { IGetDriverInformationResponse } from './get-driver-information-response.interface';
+export { IGetDriverInformationData } from './get-driver-information-data.interface';

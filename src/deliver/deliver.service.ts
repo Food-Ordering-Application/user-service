@@ -2,10 +2,18 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
-import { CheckDriverAccountBalanceDto, RegisterDriverDto } from './dto';
+import {
+  CheckDriverAccountBalanceDto,
+  GetDriverInformationDto,
+  RegisterDriverDto,
+} from './dto';
 import { AccountWallet, Driver, DriverPaymentInfo } from './entities';
 import { EPaymentMethod } from './enums';
-import { ICanDriverAcceptOrderResponse, IDriverResponse } from './interfaces';
+import {
+  ICanDriverAcceptOrderResponse,
+  IDriverResponse,
+  IGetDriverInformationResponse,
+} from './interfaces';
 
 const COMISSION_FEE_PERCENT = 0.2;
 const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
@@ -207,6 +215,40 @@ export class DeliverService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         canAccept: false,
+      };
+    }
+  }
+
+  //! Lấy sđt, tên, ảnh khuôn mặt, biển số của driver
+  async getDriverInformation(
+    getDriverInformationDto: GetDriverInformationDto,
+  ): Promise<IGetDriverInformationResponse> {
+    const { driverId } = getDriverInformationDto;
+    try {
+      //TODO: Lấy thông tin driver với driverId
+      const driver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .select([
+          'driver.phoneNumber',
+          'driver.name',
+          'driver.licensePlate',
+          'driver.avatar',
+        ])
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      console.log('Driver', driver);
+      return {
+        status: HttpStatus.OK,
+        message: 'DriverInfo fetched successfully',
+        driverInfo: driver,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        driverInfo: null,
       };
     }
   }
