@@ -15,6 +15,7 @@ import {
   GetCustomerResetPasswordTokenDto,
   UpdateCustomerPasswordDto,
   UpdateCustomerInfoDto,
+  GetCustomerInformationToCreateDeliveryDto,
 } from './dto';
 import { VerifyCustomerEmailDto } from './dto/verify-customer-email.dto';
 import {
@@ -24,6 +25,7 @@ import {
   ICustomerSendOTPVerifyResponse,
   IGetAddressResponse,
   IGetCustomerResetPasswordTokenResponse,
+  IGetInformationForDeliveryResponse,
   ISimpleResponse,
   IUpdateCustomerInfoResponse,
 } from './interfaces';
@@ -115,6 +117,16 @@ export class CustomerController {
   ): Promise<IGetAddressResponse> {
     return this.customerService.getDefaultCustomerAddressInfo(
       getDefaultCustomerAddressInfoDto,
+    );
+  }
+
+  @MessagePattern('getCustomerInformationToCreateDelivery')
+  getCustomerInformationToCreateDelivery(
+    @Payload()
+    getCustomerInformationToCreateDeliveryDto: GetCustomerInformationToCreateDeliveryDto,
+  ): Promise<IGetInformationForDeliveryResponse> {
+    return this.customerService.getCustomerInformationToCreateDelivery(
+      getCustomerInformationToCreateDeliveryDto,
     );
   }
 
