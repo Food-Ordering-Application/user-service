@@ -11,6 +11,5 @@ export interface IDriver {
   driverLicenseImageUrl?: string;
   vehicleRegistrationCertificateImageUrl?: string;
   walletId?: string;
-  isVerified?: boolean;
   isBanned?: boolean;
 }

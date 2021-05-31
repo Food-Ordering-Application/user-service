@@ -12,7 +12,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Merchant } from './merchant.entity';
-import { Payment } from './payment.entity';
+import { PaymentInfo } from './payment-info.entity';
 
 @Entity()
 export class RestaurantProfile {
@@ -66,7 +66,7 @@ export class RestaurantProfile {
   @Column()
   isBanned: boolean;
 
-  @OneToOne(() => Payment, { cascade: ['insert', 'update'] })
+  @OneToOne(() => PaymentInfo, { cascade: ['insert', 'update'] })
   @JoinColumn()
-  payment: Payment;
+  paymentInfo: PaymentInfo;
 }

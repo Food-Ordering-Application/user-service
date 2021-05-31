@@ -10,3 +10,4 @@ export { ISimpleResponse } from './simple-response.interface';
 export { IGetCustomerResetPasswordTokenResponse } from './get-customer-reset-password-response.interface';
 export { IUpdateCustomerInfoResponse } from './update-customer-info-response.interface';
 export { IGetInformationForDeliveryResponse } from './get-customer-information-to-create-delivery.interface';
+export { IVerifyCustomerEmail } from './verify-customer-email.interface';

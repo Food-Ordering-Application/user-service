@@ -1,25 +1,37 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
-  OneToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Payment } from '../../merchant/entities';
+import { EDriverPaymentStatus } from '../enums';
 import { Driver } from './driver.entity';
 
 @Entity()
 export class DriverPayment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column({ default: false })
-  isDefault?: boolean;
+
+  @Column({ enum: EDriverPaymentStatus })
+  status: string;
+
+  @Column()
+  amount: number;
+
+  @Column({ nullable: true })
+  captureId: string;
+
+  @Column({ nullable: true })
+  paypalOrderId: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
   //? Relation
   @ManyToOne(() => Driver, (driver) => driver.driverPayments)
   driver: Driver;
-
-  @OneToOne(() => Payment, (payment) => payment.driverPayment)
-  @JoinColumn()
-  payment: Payment;
 }

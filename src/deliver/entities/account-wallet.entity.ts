@@ -6,7 +6,9 @@ export class AccountWallet {
   @PrimaryGeneratedColumn('uuid')
   id: string;
   @Column({ default: 0 })
-  currentBalance?: number;
+  mainBalance: number;
+  @Column({ default: 0 })
+  depositBalance: number;
   //? Relation
   @OneToOne(() => Driver, (driver) => driver.wallet)
   driver: Driver;

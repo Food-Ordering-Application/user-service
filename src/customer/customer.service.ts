@@ -28,6 +28,7 @@ import {
   IGetInformationForDeliveryResponse,
   ISimpleResponse,
   IUpdateCustomerInfoResponse,
+  IVerifyCustomerEmail,
 } from './interfaces';
 import { CustomerAddress } from './entities';
 import { v4 as uuidv4 } from 'uuid';
@@ -550,7 +551,21 @@ export class CustomerService {
       //TODO: Tạo unique resetToken
       const resetToken = uuidv4();
       //TODO: Update trường resetPasswordToken và resetPasswordTokenExpiration
-      const customer = await this.customerRepository.findOne({ email: email });
+      const customer = await this.customerRepository.findOne({
+        email: email,
+        isEmailVerified: true,
+      });
+
+      //TODO: Nếu không tìm thấy customer
+      //TODO: Do customer đó chưa cập nhật email hoặc email chưa được verify
+      if (!customer) {
+        return {
+          status: HttpStatus.BAD_REQUEST,
+          message:
+            'Không tìm thấy email nào hoặc email liên kết với tài khoản chưa được kích hoạt',
+        };
+      }
+
       customer.resetPasswordToken = resetToken;
       customer.resetPasswordTokenExpiration =
         Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION;
@@ -685,6 +700,7 @@ export class CustomerService {
         //TODO: Tìm xem có acccount customer nào liên kết với email này hay chưa
         const findCustomer = await this.customerRepository.findOne({
           email: email,
+          isEmailVerified: true,
         });
 
         if (!findCustomer) {
@@ -701,6 +717,7 @@ export class CustomerService {
           return {
             status: HttpStatus.OK,
             message: 'Send email verify successfully',
+            email: email,
           };
         } else {
           return {
@@ -736,7 +753,7 @@ export class CustomerService {
 
   async verifyCustomerEmail(
     verifyCustomerEmailDto: VerifyCustomerEmailDto,
-  ): Promise<ISimpleResponse> {
+  ): Promise<IVerifyCustomerEmail> {
     try {
       const { verifyEmailToken } = verifyCustomerEmailDto;
       const customer = await this.customerRepository

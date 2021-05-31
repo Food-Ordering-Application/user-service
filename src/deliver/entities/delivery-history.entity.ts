@@ -23,6 +23,6 @@ export class DeliveryHistory {
   createdAt: Date;
 
   //? Relation
-  @ManyToOne(() => Driver, (driver) => driver.driverPayments)
+  @ManyToOne(() => Driver, (driver) => driver.deliveryHistories)
   driver: Driver;
 }
