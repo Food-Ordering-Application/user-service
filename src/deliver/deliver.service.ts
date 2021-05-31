@@ -1,9 +1,13 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RegisterDriverDto } from './dto';
-import { Driver } from './entities';
-import { IDriverResponse } from './interfaces';
+import { CheckDriverAccountBalanceDto, RegisterDriverDto } from './dto';
+import { AccountWallet, Driver } from './entities';
+import { EPaymentMethod } from './enums';
+import { ICanDriverAcceptOrderResponse, IDriverResponse } from './interfaces';
+
+const COMISSION_FEE_PERCENT = 0.2;
+const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
 
 @Injectable()
 export class DeliverService {
@@ -12,6 +16,8 @@ export class DeliverService {
   constructor(
     @InjectRepository(Driver)
     private driverRepository: Repository<Driver>,
+    @InjectRepository(AccountWallet)
+    private accountWalletRepository: Repository<AccountWallet>,
   ) {}
 
   //! Tìm kiếm driver bằng số điện thoại
@@ -81,6 +87,88 @@ export class DeliverService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         driver: null,
+      };
+    }
+  }
+
+  //! Kiểm tra balance của driver xem có đủ điều kiện accept đơn ko
+  async checkDriverAccountBalance(
+    checkDriverAccountBalanceDto: CheckDriverAccountBalanceDto,
+  ): Promise<ICanDriverAcceptOrderResponse> {
+    const { order, driverId } = checkDriverAccountBalanceDto;
+    try {
+      //TODO: Lấy thông tin account balance driver
+      const accountWallet = await this.accountWalletRepository
+        .createQueryBuilder('accountW')
+        .leftJoinAndSelect('accountW.driver', 'driver')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      switch (order.invoice.payment.method) {
+        //TODO: Trường hợp COD (Trả sau)
+        case EPaymentMethod.COD:
+          //TODO: Check xem trong ví (tài khoản chính - 20%*shippingFee).abs() > 50% * tài khoản ký quỹ
+          if (
+            Math.abs(
+              accountWallet.mainBalance -
+                COMISSION_FEE_PERCENT * order.delivery.shippingFee,
+            ) >
+            DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
+          ) {
+            return {
+              status: HttpStatus.FORBIDDEN,
+              message:
+                'Driver cant accept order due to not having enough money in account',
+              canAccept: false,
+            };
+          } else {
+            //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
+            accountWallet.mainBalance -=
+              COMISSION_FEE_PERCENT * order.delivery.shippingFee;
+            await this.accountWalletRepository.save(accountWallet);
+            return {
+              status: HttpStatus.OK,
+              message: 'Driver can accept order',
+              canAccept: true,
+            };
+          }
+        //TODO: Trường hợp Paypal (Trả trước)
+        case EPaymentMethod.PAYPAL:
+          //TODO: Check xem trong ví (tài khoản chính - 20%*shippingFee - tiền hàng).abs()
+          //TODO: > 50% * tài khoản ký quỹ
+          if (
+            Math.abs(
+              accountWallet.mainBalance -
+                COMISSION_FEE_PERCENT * order.delivery.shippingFee -
+                order.subTotal,
+            ) >
+            DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
+          ) {
+            return {
+              status: HttpStatus.FORBIDDEN,
+              message:
+                'Driver cant accept order due to not having enough money in account',
+              canAccept: false,
+            };
+          } else {
+            //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
+            accountWallet.mainBalance -=
+              COMISSION_FEE_PERCENT * order.delivery.shippingFee +
+              order.subTotal;
+            await this.accountWalletRepository.save(accountWallet);
+            return {
+              status: HttpStatus.OK,
+              message: 'Driver can accept order',
+              canAccept: true,
+            };
+          }
+      }
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        canAccept: false,
       };
     }
   }

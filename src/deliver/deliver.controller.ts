@@ -2,7 +2,8 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DeliverService } from './deliver.service';
 import { RegisterDriverDto } from './dto';
-import { IDriverResponse } from './interfaces';
+import { CheckDriverAccountBalanceDto } from './dto/check-driver-account-balance.dto';
+import { ICanDriverAcceptOrderResponse, IDriverResponse } from './interfaces';
 
 @Controller()
 export class DeliverController {
@@ -22,5 +23,16 @@ export class DeliverController {
     @Payload() registerDriverDto: RegisterDriverDto,
   ): Promise<IDriverResponse> {
     return this.deliverService.registerDriver(registerDriverDto);
+  }
+
+  //! Kiểm tra balance của driver xem có đủ điều kiện accept đơn ko
+  @MessagePattern('checkDriverAccountBalance')
+  async checkDriverAccountBalance(
+    @Payload()
+    checkDriverAccountBalanceDto: CheckDriverAccountBalanceDto,
+  ): Promise<ICanDriverAcceptOrderResponse> {
+    return this.deliverService.checkDriverAccountBalance(
+      checkDriverAccountBalanceDto,
+    );
   }
 }

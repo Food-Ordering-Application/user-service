@@ -159,7 +159,7 @@ export class MerchantService {
       isBanned,
       isVerified,
     });
-    restaurantProfile.payment = this.createNewPayment();
+    restaurantProfile.paymentInfo = this.createNewPayment();
     await this.restaurantProfileRepository.save(restaurantProfile);
   }
 
@@ -356,20 +356,20 @@ export class MerchantService {
       };
     }
 
-    const { payment } = paymentOfRestaurant;
-    if (!payment) {
+    const { paymentInfo } = paymentOfRestaurant;
+    if (!paymentInfo) {
       return {
         status: HttpStatus.BAD_REQUEST,
-        message: 'Cannot query payment information',
+        message: 'Cannot query paymentInfo information',
         data: null,
       };
     }
 
     return {
       status: HttpStatus.OK,
-      message: 'Fetched payment of restaurant successfully',
+      message: 'Fetched paymentInfo of restaurant successfully',
       data: {
-        payment: PaymentDto.EntityToDto(payment),
+        payment: PaymentDto.EntityToDto(paymentInfo),
       },
     };
   }
@@ -395,22 +395,22 @@ export class MerchantService {
       };
     }
 
-    const { payment } = paymentOfRestaurant;
-    if (!payment?.paypal) {
+    const { paymentInfo } = paymentOfRestaurant;
+    if (!paymentInfo?.paypal) {
       return {
         status: HttpStatus.BAD_REQUEST,
-        message: 'Cannot query payment information',
+        message: 'Cannot query paymentInfo information',
       };
     }
 
-    payment.paypal.merchantIdInPayPal = merchantIdInPayPal;
+    paymentInfo.paypal.merchantIdInPayPal = merchantIdInPayPal;
 
     try {
       // save to database
-      await this.paypalPaymentRepository.save(payment.paypal);
+      await this.paypalPaymentRepository.save(paymentInfo.paypal);
       return {
         status: HttpStatus.OK,
-        message: 'Add Paypal payment successfully',
+        message: 'Add Paypal paymentInfo successfully',
       };
     } catch (e) {
       return {
@@ -466,15 +466,15 @@ export class MerchantService {
       };
     }
 
-    const { payment } = paymentOfRestaurant;
-    if (!payment?.paypal) {
+    const { paymentInfo } = paymentOfRestaurant;
+    if (!paymentInfo?.paypal) {
       return {
         status: HttpStatus.BAD_REQUEST,
-        message: 'Cannot query payment information',
+        message: 'Cannot query paymentInfo information',
         data: null,
       };
     }
-    const { paypal } = payment;
+    const { paypal } = paymentInfo;
     const { isOnboard, merchantIdInPayPal } = paypal;
 
     // already onboard

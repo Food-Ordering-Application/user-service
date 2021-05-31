@@ -58,14 +58,8 @@ export class modifyEntity1622375525021 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "customer" ADD CONSTRAINT "UQ_fdb2f3ad8115da4c7718109a6eb" UNIQUE ("email")`,
     );
-    await queryRunner.query(
-      `ALTER TABLE "customer" ADD CONSTRAINT "UQ_fdb2f3ad8115da4c7718109a6eb" UNIQUE ("email")`,
-    );
     await queryRunner.query(`ALTER TABLE "driver" DROP COLUMN "dateOfBirth"`);
     await queryRunner.query(`ALTER TABLE "driver" ADD "dateOfBirth" TIMESTAMP`);
-    await queryRunner.query(
-      `ALTER TABLE "restaurant_profile" ADD CONSTRAINT "FK_4302a91d2282581cef7c36e8b85" FOREIGN KEY ("paymentId") REFERENCES "payment"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
     await queryRunner.query(
       `ALTER TABLE "driver_payment" ADD CONSTRAINT "FK_c5127e2e35ff7464b6e425756b6" FOREIGN KEY ("paymentId") REFERENCES "payment"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );

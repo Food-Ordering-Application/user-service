@@ -68,5 +68,5 @@ export class RestaurantProfile {
 
   @OneToOne(() => PaymentInfo, { cascade: ['insert', 'update'] })
   @JoinColumn()
-  payment: PaymentInfo;
+  paymentInfo: PaymentInfo;
 }
