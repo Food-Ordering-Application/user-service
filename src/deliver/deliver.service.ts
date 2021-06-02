@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
+import { Connection, Repository } from 'typeorm';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
 import {
   ApproveDepositMoneyIntoMainAccountWalletDto,
@@ -11,6 +11,7 @@ import {
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
 import {
+  AccountTransaction,
   AccountWallet,
   Driver,
   DriverPaymentInfo,
@@ -23,6 +24,7 @@ import {
   EPayinTransactionStatus,
   EPaymentMethod,
   EWithdrawTransactionStatus,
+  EOperationType,
 } from './enums';
 import {
   ICanDriverAcceptOrderResponse,
@@ -64,6 +66,10 @@ export class DeliverService {
     private payinTransactionRepository: Repository<PayinTransaction>,
     @InjectRepository(WithdrawTransaction)
     private withdrawTransactionRepository: Repository<WithdrawTransaction>,
+    @InjectRepository(AccountTransaction)
+    private accountTransactionRepository: Repository<AccountTransaction>,
+    @InjectConnection()
+    private connection: Connection,
   ) {}
 
   //! Tìm kiếm driver bằng số điện thoại
@@ -173,6 +179,7 @@ export class DeliverService {
     checkDriverAccountBalanceDto: CheckDriverAccountBalanceDto,
   ): Promise<ICanDriverAcceptOrderResponse> {
     const { order, driverId } = checkDriverAccountBalanceDto;
+    let queryRunner;
     try {
       //TODO: Lấy thông tin account balance driver
       const accountWallet = await this.accountWalletRepository
@@ -180,6 +187,10 @@ export class DeliverService {
         .leftJoinAndSelect('accountW.driver', 'driver')
         .where('driver.id = :driverId', { driverId: driverId })
         .getOne();
+
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
       switch (order.invoice.payment.method) {
         //TODO: Trường hợp COD (Trả sau)
@@ -200,9 +211,18 @@ export class DeliverService {
             };
           } else {
             //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
-            accountWallet.mainBalance -=
+            const moneyToDeduct =
               COMISSION_FEE_PERCENT * order.delivery.shippingFee;
-            await this.accountWalletRepository.save(accountWallet);
+            accountWallet.mainBalance -= moneyToDeduct;
+            //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
+            const accountTransaction = new AccountTransaction();
+            accountTransaction.amount = moneyToDeduct;
+            accountTransaction.driver = accountWallet.driver;
+            accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
+            await Promise.all([
+              queryRunner.manager.save(AccountWallet, accountWallet),
+              queryRunner.manager.save(AccountTransaction, accountTransaction),
+            ]);
             return {
               status: HttpStatus.OK,
               message: 'Driver can accept order',
@@ -229,10 +249,19 @@ export class DeliverService {
             };
           } else {
             //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
-            accountWallet.mainBalance -=
+            const moneyToDeduct =
               COMISSION_FEE_PERCENT * order.delivery.shippingFee +
               order.subTotal;
-            await this.accountWalletRepository.save(accountWallet);
+            accountWallet.mainBalance -= moneyToDeduct;
+            //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
+            const accountTransaction = new AccountTransaction();
+            accountTransaction.amount = moneyToDeduct;
+            accountTransaction.driver = accountWallet.driver;
+            accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
+            await Promise.all([
+              queryRunner.manager.save(AccountWallet, accountWallet),
+              queryRunner.manager.save(AccountTransaction, accountTransaction),
+            ]);
             return {
               status: HttpStatus.OK,
               message: 'Driver can accept order',
@@ -240,13 +269,17 @@ export class DeliverService {
             };
           }
       }
+      await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         canAccept: false,
       };
+    } finally {
+      await queryRunner.release();
     }
   }
 
