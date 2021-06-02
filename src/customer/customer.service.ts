@@ -10,6 +10,7 @@ import { VerifyCustomerPhoneNumberDto } from './dto/verify-customer-phone-number
 import {
   CreateCustomerAddressDto,
   DeleteCustomerAddressDto,
+  GetCustomerInformationToCreateDeliveryDto,
   GetCustomerResetPasswordTokenDto,
   GetDefaultCustomerAddressInfoDto,
   GetListCustomerAddressDto,
@@ -24,6 +25,7 @@ import {
   ICustomerAddressResponse,
   IGetAddressResponse,
   IGetCustomerResetPasswordTokenResponse,
+  IGetInformationForDeliveryResponse,
   ISimpleResponse,
   IUpdateCustomerInfoResponse,
   IVerifyCustomerEmail,
@@ -257,8 +259,12 @@ export class CustomerService {
     createCustomerAddressDto: CreateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const { address, customerId, latitude, longtitude } =
-        createCustomerAddressDto;
+      const {
+        address,
+        customerId,
+        latitude,
+        longtitude,
+      } = createCustomerAddressDto;
 
       // Tìm ra customer với customerId
       const customer = await this.customerRepository
@@ -300,8 +306,13 @@ export class CustomerService {
     updateCustomerAddressDto: UpdateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const { address, customerId, latitude, longtitude, customerAddressId } =
-        updateCustomerAddressDto;
+      const {
+        address,
+        customerId,
+        latitude,
+        longtitude,
+        customerAddressId,
+      } = updateCustomerAddressDto;
 
       // Tìm ra customer address và update
       const customerAddress = await this.customerAddressRepository
@@ -421,6 +432,62 @@ export class CustomerService {
         data: {
           address: defaultAddress.address,
           geom: defaultAddress.geom,
+        },
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        data: null,
+      };
+    }
+  }
+
+  async getCustomerInformationToCreateDelivery(
+    getCustomerInformationToCreateDeliveryDto: GetCustomerInformationToCreateDeliveryDto,
+  ): Promise<IGetInformationForDeliveryResponse> {
+    try {
+      const { customerId } = getCustomerInformationToCreateDeliveryDto;
+
+      const customer = await this.customerRepository
+        .createQueryBuilder('customer')
+        .leftJoinAndSelect(
+          'customer.customerAddresses',
+          'customerAddress',
+          'customerAddress.default = :addressDefault',
+          {
+            addressDefault: true,
+          },
+        )
+        .where('customer.id = :customerId', {
+          customerId: customerId,
+        })
+        .select(['customerAddress', 'customer.name', 'customer.phoneNumber'])
+        .getOne();
+
+      if (!customer) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Customer not found',
+          data: null,
+        };
+      }
+      const { name, phoneNumber, customerAddresses } = customer;
+      const customerAddress =
+        Array.isArray(customerAddresses) &&
+        customerAddresses.length &&
+        customerAddresses[0];
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Fetch customer information successfully',
+        data: {
+          // Nếu user chưa có address thì trả về null
+          address: customerAddress?.address || null,
+          geom: customerAddress?.geom || null,
+          name,
+          phoneNumber,
         },
       };
     } catch (error) {
