@@ -10,9 +10,9 @@ export class modifyEntity1622462542222 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "driver" ADD "avatar" character varying`,
     );
-    await queryRunner.query(
-      `ALTER TABLE "restaurant_profile" ADD CONSTRAINT "FK_01cebb5e2c2b565ebc0d7097636" FOREIGN KEY ("paymentInfoId") REFERENCES "payment_info"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
+    // await queryRunner.query(
+    //   `ALTER TABLE "restaurant_profile" ADD CONSTRAINT "FK_01cebb5e2c2b565ebc0d7097636" FOREIGN KEY ("paymentInfoId") REFERENCES "payment_info"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    // );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

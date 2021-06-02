@@ -3,20 +3,38 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
 import {
+  ApproveDepositMoneyIntoMainAccountWalletDto,
   CheckDriverAccountBalanceDto,
+  DepositMoneyIntoMainAccountWalletDto,
   GetDriverInformationDto,
   RegisterDriverDto,
+  WithdrawMoneyToPaypalAccountDto,
 } from './dto';
-import { AccountWallet, Driver, DriverPaymentInfo } from './entities';
-import { EPaymentMethod } from './enums';
+import {
+  AccountWallet,
+  Driver,
+  DriverPayment,
+  DriverPaymentInfo,
+} from './entities';
+import { EDriverPaymentStatus, EPaymentMethod } from './enums';
 import {
   ICanDriverAcceptOrderResponse,
+  IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
   IGetDriverInformationResponse,
 } from './interfaces';
+import axios from 'axios';
+import * as paypal from '@paypal/checkout-server-sdk';
+import * as paypalPayout from '@paypal/payouts-sdk';
+import { client } from './config/checkout-paypal';
+import { client as payoutClient } from './config/payout-paypal';
+import { ISimpleResponse } from '../customer/interfaces';
+import * as uniqid from 'uniqid';
 
+const DEFAULT_EXCHANGE_RATE = 0.00004;
 const COMISSION_FEE_PERCENT = 0.2;
 const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
+const MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW = 300000;
 
 @Injectable()
 export class DeliverService {
@@ -33,6 +51,8 @@ export class DeliverService {
     private paymentInfoRepository: Repository<PaymentInfo>,
     @InjectRepository(DriverPaymentInfo)
     private driverPaymentInfoRepository: Repository<DriverPaymentInfo>,
+    @InjectRepository(DriverPayment)
+    private driverPaymentRepository: Repository<DriverPayment>,
   ) {}
 
   //! Tìm kiếm driver bằng số điện thoại
@@ -249,6 +269,267 @@ export class DeliverService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         driverInfo: null,
+      };
+    }
+  }
+
+  //! CreateOrder Nạp tiền vào tài khoản chính driver
+  async depositMoneyIntoMainAccountWallet(
+    depositMoneyIntoMainAccountWalletDto: DepositMoneyIntoMainAccountWalletDto,
+  ): Promise<IDepositMoneyIntoMainAccountWalletResponse> {
+    const { callerId, moneyToDeposit, driverId } =
+      depositMoneyIntoMainAccountWalletDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy thông tin driver
+      const driver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      const exchangeRate = await axios.get(
+        'https://free.currconv.com/api/v7/convert?q=VND_USD&compact=ultra&apiKey=4ea1fc028af307b152e8',
+      );
+      const rate = exchangeRate.data.VND_USD || DEFAULT_EXCHANGE_RATE;
+      //TODO: Đổi tiền muốn chuyển từ VND sang USD
+      const moneyToDepositUSD = parseFloat((moneyToDeposit * rate).toFixed(2));
+
+      //TODO: Gọi api paypal tạo order
+      const request = new paypal.orders.OrdersCreateRequest();
+      request.headers['PayPal-Partner-Attribution-Id'] =
+        process.env.PAYPAL_PARTNER_ATTRIBUTION_ID;
+      request.prefer('return=representation');
+      request.requestBody({
+        intent: 'CAPTURE',
+        purchase_units: [
+          {
+            amount: {
+              currency_code: 'USD',
+              value: moneyToDepositUSD.toString(),
+            },
+          },
+        ],
+      });
+      const paypalOrder = await client().execute(request);
+      console.log('OK');
+      //TODO: Tạo đối tượng driverPayment
+      const driverPayment = new DriverPayment();
+      driverPayment.amount = moneyToDeposit;
+      driverPayment.driver = driver;
+      driverPayment.status = EDriverPaymentStatus.PENDING;
+      driverPayment.paypalOrderId = paypalOrder.result.id;
+      await this.driverPaymentRepository.save(driverPayment);
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        paypalOrderId: paypalOrder.result.id,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! ApproveOrder Nạp tiền vào tài khoản chính driver
+  async approveDepositMoneyIntoMainAccountWallet(
+    approveDepositMoneyIntoMainAccountWalletDto: ApproveDepositMoneyIntoMainAccountWalletDto,
+  ): Promise<ISimpleResponse> {
+    try {
+      const { paypalOrderId, callerId, driverId } =
+        approveDepositMoneyIntoMainAccountWalletDto;
+
+      //TODO: Nếu như driverId !== callerId
+      if (driverId !== callerId) {
+        return {
+          status: HttpStatus.FORBIDDEN,
+          message: 'Forbidden',
+        };
+      }
+
+      //TODO: Lấy DriverPayment của driver
+      const driverPayment = await this.driverPaymentRepository
+        .createQueryBuilder('driverPayment')
+        .where('driverPayment.status = :driverPaymentStatus', {
+          driverPaymentStatus: EDriverPaymentStatus.PENDING,
+        })
+        .andWhere('driverPayment.paypalOrderId = :paypalOrderId', {
+          paypalOrderId: paypalOrderId,
+        })
+        .getOne();
+
+      //TODO: Lấy AccountWallet của driver
+      const driver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .leftJoinAndSelect('driver.wallet', 'accountWallet')
+        .where('driver.id = :driverId', {
+          driverId: driverId,
+        })
+        .getOne();
+
+      if (!driverPayment) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Driverpayment not found',
+        };
+      }
+
+      //TODO: Call PayPal to capture the order
+      const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
+      request.headers['PayPal-Partner-Attribution-Id'] =
+        process.env.PAYPAL_PARTNER_ATTRIBUTION_ID;
+      request.requestBody({});
+
+      const capture = await client().execute(request);
+      //TODO: Save the capture ID to your database.
+      const captureID =
+        capture.result.purchase_units[0].payments.captures[0].id;
+      //TODO: Lưu lại captureId
+      driverPayment.captureId = captureID;
+      //TODO: Đổi trạng thái payment sang đã thành công
+      driverPayment.status = EDriverPaymentStatus.COMPLETED;
+      //TODO: Cộng tiền vào tài khoản chính
+      driver.wallet.mainBalance += driverPayment.amount;
+      await Promise.all([
+        this.driverPaymentRepository.save(driverPayment),
+        this.accountWalletRepository.save(driver.wallet),
+      ]);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Approve deposit money into main account wallet successfully',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Rút tiền từ ví vào tài khoản paypal của driver
+  async withdrawMoneyToPaypalAccount(
+    withdrawMoneyToPaypalAccountDto: WithdrawMoneyToPaypalAccountDto,
+  ): Promise<ISimpleResponse> {
+    const { driverId, callerId, moneyToWithdraw } =
+      withdrawMoneyToPaypalAccountDto;
+    try {
+      //TODO: Nếu như driverId !== callerId
+      if (driverId !== callerId) {
+        return {
+          status: HttpStatus.FORBIDDEN,
+          message: 'Forbidden',
+        };
+      }
+      //TODO: Lấy AccountWallet của driver
+      const driver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .leftJoinAndSelect('driver.wallet', 'accountWallet')
+        .where('driver.id = :driverId', {
+          driverId: driverId,
+        })
+        .getOne();
+
+      //TODO: Tối thiểu tài khoản phải có 300k để có thể thực hiện rút tiền
+      if (driver.wallet.mainBalance < MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW) {
+        return {
+          status: HttpStatus.FORBIDDEN,
+          message:
+            'Cannot withdraw money because main wallet does not exceed 300k',
+          reason: 'MINIMUM_MAIN_ACCOUNT_AMOUNT_REQUIRED_NOT_EXCEEDED',
+        };
+      }
+
+      //TODO: Nếu số tiền muốn rút vượt quá số tiền hiện có trong ví
+      if (moneyToWithdraw > driver.wallet.mainBalance) {
+        return {
+          status: HttpStatus.FORBIDDEN,
+          message:
+            'Cannot withdraw money because main wallet does not have enough money',
+          reason: 'INSUFFICIENT_AMOUNT_IN_MAIN_ACCOUNT',
+        };
+      }
+
+      const exchangeRate = await axios.get(
+        'https://free.currconv.com/api/v7/convert?q=VND_USD&compact=ultra&apiKey=4ea1fc028af307b152e8',
+      );
+      const rate = exchangeRate.data.VND_USD || DEFAULT_EXCHANGE_RATE;
+      //TODO: Đổi tiền muốn rút từ VND sang USD
+      const moneyToWithdrawUSD = parseFloat(
+        (moneyToWithdraw * rate).toFixed(2),
+      );
+      //TODO: Tạo sender_batch_id, sender_item_id
+      const sender_batch_id = uniqid('senderBatchId-');
+      const sender_item_id = uniqid('senderItemId-');
+
+      const requestBody = {
+        sender_batch_header: {
+          recipient_type: 'EMAIL',
+          email_message: 'This is email message',
+          note: 'Enjoy your Payout!!',
+          sender_batch_id: 'Test_sdk_1',
+          email_subject: 'This is a test transaction from SDK',
+        },
+        items: [
+          {
+            note: 'Your 1$ Payout!',
+            amount: {
+              currency: 'USD',
+              value: moneyToWithdrawUSD.toString(),
+            },
+            receiver: 'payout-sdk-1@paypal.com',
+            sender_item_id: 'Test_txn_1',
+          },
+        ],
+      };
+
+      // Construct a request object and set desired parameters
+      // Here, PayoutsPostRequest() creates a POST request to /v1/payments/payouts
+      const request = new paypalPayout.payouts.PayoutsPostRequest();
+      request.requestBody(requestBody);
+      try {
+        const response = await payoutClient().execute(request);
+        console.log(`Response: ${JSON.stringify(response)}`);
+        // If call returns body in response, you can get the deserialized version from the result attribute of the response.
+        console.log(
+          `Payouts Create Response: ${JSON.stringify(response.result)}`,
+        );
+        return {
+          status: HttpStatus.OK,
+          message: 'Withdraw successfully, please check your paypal account!',
+        };
+      } catch (e) {
+        if (e.statusCode) {
+          //Handle server side/API failure response
+          console.log('Status code: ', e.statusCode);
+          // Parse failure response to get the reason for failure
+          const error = JSON.parse(e.message);
+          console.log('Failure response: ', error);
+          console.log('Headers: ', e.headers);
+        } else {
+          //Hanlde client side failure
+          console.log(e);
+        }
+        return {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Withdraw failed',
+        };
+      }
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
       };
     }
   }

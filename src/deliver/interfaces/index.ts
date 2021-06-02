@@ -10,3 +10,4 @@ export { IPayment } from './payment.interface';
 export { IPaypalPayment } from './paypal-payment.interface';
 export { IGetDriverInformationResponse } from './get-driver-information-response.interface';
 export { IGetDriverInformationData } from './get-driver-information-data.interface';
+export { IDepositMoneyIntoMainAccountWalletResponse } from './deposit-money-to-main-wallet-response.interface';

@@ -1,10 +1,18 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { ISimpleResponse } from '../customer/interfaces';
 import { DeliverService } from './deliver.service';
-import { GetDriverInformationDto, RegisterDriverDto } from './dto';
+import {
+  ApproveDepositMoneyIntoMainAccountWalletDto,
+  DepositMoneyIntoMainAccountWalletDto,
+  GetDriverInformationDto,
+  RegisterDriverDto,
+  WithdrawMoneyToPaypalAccountDto,
+} from './dto';
 import { CheckDriverAccountBalanceDto } from './dto/check-driver-account-balance.dto';
 import {
   ICanDriverAcceptOrderResponse,
+  IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
   IGetDriverInformationResponse,
 } from './interfaces';
@@ -47,5 +55,38 @@ export class DeliverController {
     getDriverInformationDto: GetDriverInformationDto,
   ): Promise<IGetDriverInformationResponse> {
     return this.deliverService.getDriverInformation(getDriverInformationDto);
+  }
+
+  //! CreateOrder Nạp tiền vào tài khoản chính driver
+  @MessagePattern('depositMoneyIntoMainAccountWallet')
+  async depositMoneyIntoMainAccountWallet(
+    @Payload()
+    depositMoneyIntoMainAccountWalletDto: DepositMoneyIntoMainAccountWalletDto,
+  ): Promise<IDepositMoneyIntoMainAccountWalletResponse> {
+    return this.deliverService.depositMoneyIntoMainAccountWallet(
+      depositMoneyIntoMainAccountWalletDto,
+    );
+  }
+
+  //! ApproveOrder Nạp tiền vào tài khoản chính driver
+  @MessagePattern('approveDepositMoneyIntoMainAccountWallet')
+  async approveDepositMoneyIntoMainAccountWallet(
+    @Payload()
+    approveDepositMoneyIntoMainAccountWalletDto: ApproveDepositMoneyIntoMainAccountWalletDto,
+  ): Promise<ISimpleResponse> {
+    return this.deliverService.approveDepositMoneyIntoMainAccountWallet(
+      approveDepositMoneyIntoMainAccountWalletDto,
+    );
+  }
+
+  //! Rút tiền từ ví vào tài khoản paypal của driver
+  @MessagePattern('withdrawMoneyToPaypalAccount')
+  async withdrawMoneyToPaypalAccount(
+    @Payload()
+    withdrawMoneyToPaypalAccountDto: WithdrawMoneyToPaypalAccountDto,
+  ): Promise<ISimpleResponse> {
+    return this.deliverService.withdrawMoneyToPaypalAccount(
+      withdrawMoneyToPaypalAccountDto,
+    );
   }
 }

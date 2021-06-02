@@ -36,7 +36,9 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/microservices": "^7.6.15",
     "@nestjs/platform-express": "^7.6.13",
-    "@nestjs/typeorm": "^7.1.5",  
+    "@nestjs/typeorm": "^7.1.5",
+    "@paypal/checkout-server-sdk": "^1.0.2",
+    "@paypal/payouts-sdk": "^1.1.0",
     "amqp-connection-manager": "^3.2.2",
     "amqplib": "^0.7.1",
     "bcrypt": "^5.0.1",
@@ -50,6 +52,7 @@
     "rxjs": "^6.6.6",
     "typeorm": "^0.2.32",
     "typeorm-seeding": "^1.6.1",
+    "uniqid": "^5.3.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
