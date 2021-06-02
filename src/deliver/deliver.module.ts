@@ -7,8 +7,10 @@ import {
   AccountWallet,
   DeliveryHistory,
   Driver,
-  DriverPayment,
   DriverPaymentInfo,
+  DriverTransaction,
+  PayinTransaction,
+  WithdrawTransaction,
 } from './entities';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
 
@@ -19,10 +21,12 @@ import { PaymentInfo, PayPalPayment } from '../merchant/entities';
       AccountWallet,
       AccountTransaction,
       DeliveryHistory,
-      DriverPayment,
       PayPalPayment,
       PaymentInfo,
       DriverPaymentInfo,
+      DriverTransaction,
+      PayinTransaction,
+      WithdrawTransaction,
     ]),
   ],
   controllers: [DeliverController],

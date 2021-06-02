@@ -13,10 +13,16 @@ import {
 import {
   AccountWallet,
   Driver,
-  DriverPayment,
   DriverPaymentInfo,
+  DriverTransaction,
+  PayinTransaction,
+  WithdrawTransaction,
 } from './entities';
-import { EDriverPaymentStatus, EPaymentMethod } from './enums';
+import {
+  EDriverTransactionType,
+  EPayinTransactionStatus,
+  EPaymentMethod,
+} from './enums';
 import {
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
@@ -51,8 +57,12 @@ export class DeliverService {
     private paymentInfoRepository: Repository<PaymentInfo>,
     @InjectRepository(DriverPaymentInfo)
     private driverPaymentInfoRepository: Repository<DriverPaymentInfo>,
-    @InjectRepository(DriverPayment)
-    private driverPaymentRepository: Repository<DriverPayment>,
+    @InjectRepository(DriverTransaction)
+    private driverTransactionRepository: Repository<DriverTransaction>,
+    @InjectRepository(PayinTransaction)
+    private payinTransactionRepository: Repository<PayinTransaction>,
+    @InjectRepository(WithdrawTransaction)
+    private withdrawTransactionRepository: Repository<WithdrawTransaction>,
   ) {}
 
   //! Tìm kiếm driver bằng số điện thoại
@@ -319,13 +329,18 @@ export class DeliverService {
       });
       const paypalOrder = await client().execute(request);
       console.log('OK');
-      //TODO: Tạo đối tượng driverPayment
-      const driverPayment = new DriverPayment();
-      driverPayment.amount = moneyToDeposit;
-      driverPayment.driver = driver;
-      driverPayment.status = EDriverPaymentStatus.PENDING;
-      driverPayment.paypalOrderId = paypalOrder.result.id;
-      await this.driverPaymentRepository.save(driverPayment);
+      //TODO: Tạo đối tượng driverTransaction, payinTransaction
+      const driverTransaction = new DriverTransaction();
+      driverTransaction.amount = moneyToDeposit;
+      driverTransaction.driver = driver;
+      driverTransaction.type = EDriverTransactionType.PAYIN;
+      await this.driverTransactionRepository.save(driverTransaction);
+
+      const payinTransaction = new PayinTransaction();
+      payinTransaction.paypalOrderId = paypalOrder.result.id;
+      payinTransaction.status = EPayinTransactionStatus.PENDING_USER_ACTION;
+      await this.payinTransactionRepository.save(payinTransaction);
+
       return {
         status: HttpStatus.OK,
         message: 'Successfully',
@@ -356,16 +371,27 @@ export class DeliverService {
         };
       }
 
-      //TODO: Lấy DriverPayment của driver
-      const driverPayment = await this.driverPaymentRepository
-        .createQueryBuilder('driverPayment')
-        .where('driverPayment.status = :driverPaymentStatus', {
-          driverPaymentStatus: EDriverPaymentStatus.PENDING,
+      //TODO: Lấy DriverTransaction và PayinTransaction của driver
+      const driverTransaction = await this.driverTransactionRepository
+        .createQueryBuilder('driverTransaction')
+        .leftJoinAndSelect(
+          'driverTransaction.payinTransaction',
+          'payinTransaction',
+        )
+        .where('payinTransaction.status = :payinTransactionStatus', {
+          payinTransactionStatus: EPayinTransactionStatus.PENDING_USER_ACTION,
         })
-        .andWhere('driverPayment.paypalOrderId = :paypalOrderId', {
+        .andWhere('payinTransaction.paypalOrderId = :paypalOrderId', {
           paypalOrderId: paypalOrderId,
         })
         .getOne();
+
+      if (!driverTransaction) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'DriverTransaction not found',
+        };
+      }
 
       //TODO: Lấy AccountWallet của driver
       const driver = await this.driverRepository
@@ -375,13 +401,6 @@ export class DeliverService {
           driverId: driverId,
         })
         .getOne();
-
-      if (!driverPayment) {
-        return {
-          status: HttpStatus.NOT_FOUND,
-          message: 'Driverpayment not found',
-        };
-      }
 
       //TODO: Call PayPal to capture the order
       const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
@@ -394,13 +413,16 @@ export class DeliverService {
       const captureID =
         capture.result.purchase_units[0].payments.captures[0].id;
       //TODO: Lưu lại captureId
-      driverPayment.captureId = captureID;
-      //TODO: Đổi trạng thái payment sang đã thành công
-      driverPayment.status = EDriverPaymentStatus.COMPLETED;
+      driverTransaction.payinTransaction.captureId = captureID;
+      //TODO: Đổi trạng thái payinTransaction sang đang xử lý
+      driverTransaction.payinTransaction.status =
+        EPayinTransactionStatus.PROCESSING;
       //TODO: Cộng tiền vào tài khoản chính
-      driver.wallet.mainBalance += driverPayment.amount;
+      driver.wallet.mainBalance += driverTransaction.amount;
       await Promise.all([
-        this.driverPaymentRepository.save(driverPayment),
+        this.payinTransactionRepository.save(
+          driverTransaction.payinTransaction,
+        ),
         this.accountWalletRepository.save(driver.wallet),
       ]);
 

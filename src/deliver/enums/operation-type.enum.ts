@@ -1,4 +1,4 @@
 export enum EOperationType {
-  PAID = 'PAID',
-  WITHDRAW = 'WITHDRAW',
+  SYSTEM_DEDUCT = 'SYSTEM_DEDUCT',
+  SYSTEM_ADD = 'SYSTEM_ADD',
 }

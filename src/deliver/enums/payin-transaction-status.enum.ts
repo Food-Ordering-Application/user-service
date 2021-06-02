@@ -1,0 +1,6 @@
+export enum EPayinTransactionStatus {
+  PENDING_USER_ACTION = 'PENDING_USER_ACTION',
+  PROCESSING = 'PROCESSING',
+  SUCCESS = 'SUCCESS',
+  FAILURE = 'FAILURE',
+}

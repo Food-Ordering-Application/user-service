@@ -13,7 +13,8 @@ import {
 import { AccountWallet } from './account-wallet.entity';
 import { DriverPaymentInfo } from './driver-payment-info.entity';
 import { DeliveryHistory } from './delivery-history.entity';
-import { DriverPayment } from './driver-payment.entity';
+import { DriverTransaction } from './driver-transaction.entity';
+import { AccountTransaction } from './account-transaction.entity';
 
 @Entity()
 export class Driver {
@@ -59,8 +60,17 @@ export class Driver {
   )
   driverPaymentInfos: DriverPaymentInfo[];
 
-  @OneToMany(() => DriverPayment, (driverPayment) => driverPayment.driver)
-  driverPayments: DriverPayment[];
+  @OneToMany(
+    () => DriverTransaction,
+    (driverTransaction) => driverTransaction.driver,
+  )
+  driverTransactions: DriverTransaction[];
+
+  @OneToMany(
+    () => AccountTransaction,
+    (accountTransaction) => accountTransaction.driver,
+  )
+  accountTransactions: AccountTransaction[];
 
   @OneToMany(() => DeliveryHistory, (deliveryHistory) => deliveryHistory.driver)
   deliveryHistories: DeliveryHistory[];

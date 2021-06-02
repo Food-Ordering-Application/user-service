@@ -2,23 +2,22 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EDriverPaymentStatus } from '../enums';
-import { Driver } from './driver.entity';
+import { EPayinTransactionStatus } from '../enums';
+import { DriverTransaction } from './driver-transaction.entity';
 
 @Entity()
-export class DriverPayment {
+export class PayinTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ enum: EDriverPaymentStatus })
+  @Column({ enum: EPayinTransactionStatus })
   status: string;
-
-  @Column()
-  amount: number;
 
   @Column({ nullable: true })
   captureId: string;
@@ -32,6 +31,10 @@ export class DriverPayment {
   @UpdateDateColumn()
   updatedAt: Date;
   //? Relation
-  @ManyToOne(() => Driver, (driver) => driver.driverPayments)
-  driver: Driver;
+  @OneToOne(
+    () => DriverTransaction,
+    (driverTransaction) => driverTransaction.payinTransaction,
+  )
+  @JoinColumn()
+  driverTransaction: DriverTransaction;
 }

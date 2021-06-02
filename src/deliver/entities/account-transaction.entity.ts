@@ -2,12 +2,9 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { PaymentInfo } from '../../merchant/entities';
 import { EOperationType } from '../enums';
 import { Driver } from './driver.entity';
 
@@ -25,6 +22,6 @@ export class AccountTransaction {
   createdAt: Date;
 
   //? Relation
-  @ManyToOne(() => Driver, (driver) => driver.driverPayments)
+  @ManyToOne(() => Driver, (driver) => driver.accountTransactions)
   driver: Driver;
 }
