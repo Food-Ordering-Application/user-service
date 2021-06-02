@@ -259,12 +259,8 @@ export class CustomerService {
     createCustomerAddressDto: CreateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const {
-        address,
-        customerId,
-        latitude,
-        longtitude,
-      } = createCustomerAddressDto;
+      const { address, customerId, latitude, longtitude } =
+        createCustomerAddressDto;
 
       // Tìm ra customer với customerId
       const customer = await this.customerRepository
@@ -306,13 +302,8 @@ export class CustomerService {
     updateCustomerAddressDto: UpdateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const {
-        address,
-        customerId,
-        latitude,
-        longtitude,
-        customerAddressId,
-      } = updateCustomerAddressDto;
+      const { address, customerId, latitude, longtitude, customerAddressId } =
+        updateCustomerAddressDto;
 
       // Tìm ra customer address và update
       const customerAddress = await this.customerAddressRepository
@@ -707,6 +698,7 @@ export class CustomerService {
           //TODO: Tạo unique emailToken
           const verifyEmailToken = uuidv4();
           //TODO: Update trường verifyEmailToken và verifyEmailTokenExpiration
+          customer.email = email;
           customer.verifyEmailToken = verifyEmailToken;
           customer.verifyEmailTokenExpiration =
             Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION;
