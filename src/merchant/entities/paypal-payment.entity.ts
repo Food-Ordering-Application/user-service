@@ -18,4 +18,7 @@ export class PayPalPayment {
 
   @Column({ default: null })
   merchantIdInPayPal: string;
+
+  @Column({ nullable: true })
+  email: string;
 }

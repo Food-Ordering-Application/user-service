@@ -497,20 +497,21 @@ export class DeliverService {
       const requestBody = {
         sender_batch_header: {
           recipient_type: 'EMAIL',
-          email_message: 'This is email message',
+          email_message:
+            'You received a payment. Thanks for using our service!',
           note: 'Enjoy your Payout!!',
-          sender_batch_id: 'Test_sdk_1',
-          email_subject: 'This is a test transaction from SDK',
+          sender_batch_id: sender_batch_id,
+          email_subject: 'You have money!',
         },
         items: [
           {
-            note: 'Your 1$ Payout!',
+            note: 'Your Payout!',
             amount: {
               currency: 'USD',
               value: moneyToWithdrawUSD.toString(),
             },
-            receiver: 'payout-sdk-1@paypal.com',
-            sender_item_id: 'Test_txn_1',
+            receiver: 'sb-uvrfb6253503@personal.example.com',
+            sender_item_id: sender_item_id,
           },
         ],
       };
