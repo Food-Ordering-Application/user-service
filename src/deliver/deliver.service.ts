@@ -97,6 +97,7 @@ export class DeliverService {
   async registerDriver(
     registerDriverDto: RegisterDriverDto,
   ): Promise<IDriverResponse> {
+    let queryRunner;
     try {
       const {
         IDNumber,
@@ -113,7 +114,9 @@ export class DeliverService {
         licensePlate,
         avatar,
       } = registerDriverDto;
-
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
       //TODO: Tạo bảng AccountWallet
       const accountWallet = new AccountWallet();
       accountWallet.mainBalance = 0;
@@ -122,8 +125,8 @@ export class DeliverService {
       const paypalPayment = new PayPalPayment();
       paypalPayment.merchantIdInPayPal = merchantIdInPaypal;
       await Promise.all([
-        this.accountWalletRepository.save(accountWallet),
-        this.paypalPaymentRepository.save(paypalPayment),
+        queryRunner.manager.save(AccountWallet, accountWallet),
+        queryRunner.manager.save(PayPalPayment, paypalPayment),
       ]);
 
       //TODO: Tạo bảng Driver
@@ -148,8 +151,8 @@ export class DeliverService {
       const paymentInfo = new PaymentInfo();
       paymentInfo.paypal = paypalPayment;
       await Promise.all([
-        this.paymentInfoRepository.save(paymentInfo),
-        this.driverRepository.save(driver),
+        queryRunner.manager.save(PaymentInfo, paymentInfo),
+        queryRunner.manager.save(Driver, driver),
       ]);
 
       //TODO: Tạo bảng DriverPaymentInfo
@@ -157,8 +160,8 @@ export class DeliverService {
       driverPaymentInfo.driver = driver;
       driverPaymentInfo.isDefault = true;
       driverPaymentInfo.paymentInfo = paymentInfo;
-      await this.driverPaymentInfoRepository.save(driverPaymentInfo);
-
+      await queryRunner.manager.save(DriverPaymentInfo, driverPaymentInfo);
+      await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
         message: 'Driver created successfully',
@@ -166,11 +169,14 @@ export class DeliverService {
       };
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         driver: null,
       };
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -331,7 +337,11 @@ export class DeliverService {
         message: 'Forbidden',
       };
     }
+    let queryRunner;
     try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
       //TODO: Lấy thông tin driver
       const driver = await this.driverRepository
         .createQueryBuilder('driver')
@@ -368,13 +378,16 @@ export class DeliverService {
       driverTransaction.amount = moneyToDeposit;
       driverTransaction.driver = driver;
       driverTransaction.type = EDriverTransactionType.PAYIN;
-      await this.driverTransactionRepository.save(driverTransaction);
+      // await this.driverTransactionRepository.save(driverTransaction);
+      await queryRunner.manager.save(DriverTransaction, driverTransaction);
 
       const payinTransaction = new PayinTransaction();
       payinTransaction.paypalOrderId = paypalOrder.result.id;
       payinTransaction.status = EPayinTransactionStatus.PENDING_USER_ACTION;
-      await this.payinTransactionRepository.save(payinTransaction);
-
+      payinTransaction.driverTransaction = driverTransaction;
+      // await this.payinTransactionRepository.save(payinTransaction);
+      await queryRunner.manager.save(PayinTransaction, payinTransaction);
+      await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
         message: 'Successfully',
@@ -382,10 +395,13 @@ export class DeliverService {
       };
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
       };
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -393,6 +409,7 @@ export class DeliverService {
   async approveDepositMoneyIntoMainAccountWallet(
     approveDepositMoneyIntoMainAccountWalletDto: ApproveDepositMoneyIntoMainAccountWalletDto,
   ): Promise<ISimpleResponse> {
+    let queryRunner;
     try {
       const { paypalOrderId, callerId, driverId } =
         approveDepositMoneyIntoMainAccountWalletDto;
@@ -453,23 +470,36 @@ export class DeliverService {
         EPayinTransactionStatus.PROCESSING;
       //TODO: Cộng tiền vào tài khoản chính
       driver.wallet.mainBalance += driverTransaction.amount;
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      // await Promise.all([
+      //   this.payinTransactionRepository.save(
+      //     driverTransaction.payinTransaction,
+      //   ),
+      //   this.accountWalletRepository.save(driver.wallet),
+      // ]);
       await Promise.all([
-        this.payinTransactionRepository.save(
+        queryRunner.manager.save(
+          PayinTransaction,
           driverTransaction.payinTransaction,
         ),
-        this.accountWalletRepository.save(driver.wallet),
+        queryRunner.manager.save(AccountWallet, driver.wallet),
       ]);
-
+      await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
         message: 'Approve deposit money into main account wallet successfully',
       };
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
       };
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -479,6 +509,7 @@ export class DeliverService {
   ): Promise<ISimpleResponse> {
     const { driverId, callerId, moneyToWithdraw } =
       withdrawMoneyToPaypalAccountDto;
+    let queryRunner;
     try {
       console.log(callerId, driverId);
       //TODO: Nếu như driverId !== callerId
@@ -557,6 +588,9 @@ export class DeliverService {
       request.requestBody(requestBody);
       try {
         const response = await payoutClient().execute(request);
+        queryRunner = this.connection.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
         console.log(`Response: ${JSON.stringify(response)}`);
         // If call returns body in response, you can get the deserialized version from the result attribute of the response.
         console.log(
@@ -567,7 +601,7 @@ export class DeliverService {
         driverTransaction.driver = driver;
         driverTransaction.amount = moneyToWithdraw;
         driverTransaction.type = EDriverTransactionType.WITHDRAW;
-        await this.driverTransactionRepository.save(driverTransaction);
+        await queryRunner.manager.save(DriverTransaction, driverTransaction);
         const withdrawTransaction = new WithdrawTransaction();
         withdrawTransaction.senderBatchId = sender_batch_id;
         withdrawTransaction.senderItemId = sender_item_id;
@@ -575,15 +609,16 @@ export class DeliverService {
         withdrawTransaction.driverTransaction = driverTransaction;
         driver.wallet.mainBalance -= moneyToWithdraw;
         await Promise.all([
-          this.withdrawTransactionRepository.save(withdrawTransaction),
-          this.accountWalletRepository.save(driver.wallet),
+          queryRunner.manager.save(WithdrawTransaction, withdrawTransaction),
+          queryRunner.manager.save(AccountWallet, driver.wallet),
         ]);
-
+        await queryRunner.commitTransaction();
         return {
           status: HttpStatus.OK,
           message: 'Withdraw successfully, please check your paypal account!',
         };
       } catch (e) {
+        await queryRunner.rollbackTransaction();
         if (e.statusCode) {
           //Handle server side/API failure response
           console.log('Status code: ', e.statusCode);
@@ -600,6 +635,8 @@ export class DeliverService {
           message: 'Withdraw failed',
           reason: 'PAYPAL_BROKEN',
         };
+      } finally {
+        await queryRunner.release();
       }
     } catch (error) {
       this.logger.error(error);
