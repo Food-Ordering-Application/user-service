@@ -22,6 +22,7 @@ import {
   EDriverTransactionType,
   EPayinTransactionStatus,
   EPaymentMethod,
+  EWithdrawTransactionStatus,
 } from './enums';
 import {
   ICanDriverAcceptOrderResponse,
@@ -446,6 +447,7 @@ export class DeliverService {
     const { driverId, callerId, moneyToWithdraw } =
       withdrawMoneyToPaypalAccountDto;
     try {
+      console.log(callerId, driverId);
       //TODO: Nếu như driverId !== callerId
       if (driverId !== callerId) {
         return {
@@ -527,6 +529,23 @@ export class DeliverService {
         console.log(
           `Payouts Create Response: ${JSON.stringify(response.result)}`,
         );
+        //TODO: Tạo đối tượng DriverTransaction, WithdrawTransaction, trừ tiền trong accountWallet
+        const driverTransaction = new DriverTransaction();
+        driverTransaction.driver = driver;
+        driverTransaction.amount = moneyToWithdraw;
+        driverTransaction.type = EDriverTransactionType.WITHDRAW;
+        await this.driverTransactionRepository.save(driverTransaction);
+        const withdrawTransaction = new WithdrawTransaction();
+        withdrawTransaction.senderBatchId = sender_batch_id;
+        withdrawTransaction.senderItemId = sender_item_id;
+        withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
+        withdrawTransaction.driverTransaction = driverTransaction;
+        driver.wallet.mainBalance -= moneyToWithdraw;
+        await Promise.all([
+          this.withdrawTransactionRepository.save(withdrawTransaction),
+          this.accountWalletRepository.save(driver.wallet),
+        ]);
+
         return {
           status: HttpStatus.OK,
           message: 'Withdraw successfully, please check your paypal account!',
@@ -546,6 +565,7 @@ export class DeliverService {
         return {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           message: 'Withdraw failed',
+          reason: 'PAYPAL_BROKEN',
         };
       }
     } catch (error) {
@@ -553,6 +573,7 @@ export class DeliverService {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
+        reason: 'OUR_SYSTEM_BROKEN',
       };
     }
   }
