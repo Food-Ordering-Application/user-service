@@ -12,7 +12,7 @@ define(CustomerAddress, (faker: typeof Faker) => {
   const longtitude = faker.address.longitude();
   const geom = {
     type: 'Point',
-    coordinates: [parseFloat(latitude), parseFloat(longtitude)],
+    coordinates: [parseFloat(longtitude), parseFloat(latitude)],
   };
 
   const customerAddress = new CustomerAddress();

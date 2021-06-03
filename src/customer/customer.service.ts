@@ -259,8 +259,12 @@ export class CustomerService {
     createCustomerAddressDto: CreateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const { address, customerId, latitude, longtitude } =
-        createCustomerAddressDto;
+      const {
+        address,
+        customerId,
+        latitude,
+        longtitude,
+      } = createCustomerAddressDto;
 
       // Tìm ra customer với customerId
       const customer = await this.customerRepository
@@ -275,7 +279,7 @@ export class CustomerService {
       customerAddress.address = address;
       customerAddress.geom = {
         type: 'Point',
-        coordinates: [latitude, longtitude],
+        coordinates: [longtitude, latitude],
       };
       customerAddress.default =
         customer.customerAddresses.length >= 1 ? false : true;
@@ -302,8 +306,13 @@ export class CustomerService {
     updateCustomerAddressDto: UpdateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const { address, customerId, latitude, longtitude, customerAddressId } =
-        updateCustomerAddressDto;
+      const {
+        address,
+        customerId,
+        latitude,
+        longtitude,
+        customerAddressId,
+      } = updateCustomerAddressDto;
 
       // Tìm ra customer address và update
       const customerAddress = await this.customerAddressRepository
@@ -316,7 +325,7 @@ export class CustomerService {
       customerAddress.address = address;
       customerAddress.geom = {
         type: 'Point',
-        coordinates: [latitude, longtitude],
+        coordinates: [longtitude, latitude],
       };
       // Lưu lại customerAddress
       await this.customerAddressRepository.save(customerAddress);
