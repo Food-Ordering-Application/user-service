@@ -1,10 +1,11 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { ISimpleResponse } from '../customer/interfaces';
 import { DeliverService } from './deliver.service';
 import {
   ApproveDepositMoneyIntoMainAccountWalletDto,
   DepositMoneyIntoMainAccountWalletDto,
+  EventPaypalOrderOccurDto,
   GetDriverInformationDto,
   RegisterDriverDto,
   WithdrawMoneyToPaypalAccountDto,
@@ -88,5 +89,14 @@ export class DeliverController {
     return this.deliverService.withdrawMoneyToPaypalAccount(
       withdrawMoneyToPaypalAccountDto,
     );
+  }
+
+  //! Sự kiện nạp, rút tiền driver
+  @EventPattern('eventPaypalOrderOccur')
+  async eventPaypalOrderOccur(
+    @Payload()
+    eventPaypalOrderOccurDto: EventPaypalOrderOccurDto,
+  ) {
+    this.deliverService.eventPaypalOrderOccur(eventPaypalOrderOccurDto);
   }
 }

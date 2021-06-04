@@ -6,6 +6,7 @@ import {
   ApproveDepositMoneyIntoMainAccountWalletDto,
   CheckDriverAccountBalanceDto,
   DepositMoneyIntoMainAccountWalletDto,
+  EventPaypalOrderOccurDto,
   GetDriverInformationDto,
   RegisterDriverDto,
   WithdrawMoneyToPaypalAccountDto,
@@ -357,8 +358,6 @@ export class DeliverService {
 
       //TODO: Gọi api paypal tạo order
       const request = new paypal.orders.OrdersCreateRequest();
-      request.headers['PayPal-Partner-Attribution-Id'] =
-        process.env.PAYPAL_PARTNER_ATTRIBUTION_ID;
       request.prefer('return=representation');
       request.requestBody({
         intent: 'CAPTURE',
@@ -367,6 +366,9 @@ export class DeliverService {
             amount: {
               currency_code: 'USD',
               value: moneyToDepositUSD.toString(),
+            },
+            payee: {
+              merchant_id: 'LU9XXKX9PSTRW',
             },
           },
         ],
@@ -378,14 +380,12 @@ export class DeliverService {
       driverTransaction.amount = moneyToDeposit;
       driverTransaction.driver = driver;
       driverTransaction.type = EDriverTransactionType.PAYIN;
-      // await this.driverTransactionRepository.save(driverTransaction);
       await queryRunner.manager.save(DriverTransaction, driverTransaction);
 
       const payinTransaction = new PayinTransaction();
       payinTransaction.paypalOrderId = paypalOrder.result.id;
       payinTransaction.status = EPayinTransactionStatus.PENDING_USER_ACTION;
       payinTransaction.driverTransaction = driverTransaction;
-      // await this.payinTransactionRepository.save(payinTransaction);
       await queryRunner.manager.save(PayinTransaction, payinTransaction);
       await queryRunner.commitTransaction();
       return {
@@ -455,8 +455,6 @@ export class DeliverService {
 
       //TODO: Call PayPal to capture the order
       const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
-      request.headers['PayPal-Partner-Attribution-Id'] =
-        process.env.PAYPAL_PARTNER_ATTRIBUTION_ID;
       request.requestBody({});
 
       const capture = await client().execute(request);
@@ -468,24 +466,15 @@ export class DeliverService {
       //TODO: Đổi trạng thái payinTransaction sang đang xử lý
       driverTransaction.payinTransaction.status =
         EPayinTransactionStatus.PROCESSING;
-      //TODO: Cộng tiền vào tài khoản chính
-      driver.wallet.mainBalance += driverTransaction.amount;
+      // //TODO: Cộng tiền vào tài khoản chính
+      // driver.wallet.mainBalance += driverTransaction.amount;
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
-      // await Promise.all([
-      //   this.payinTransactionRepository.save(
-      //     driverTransaction.payinTransaction,
-      //   ),
-      //   this.accountWalletRepository.save(driver.wallet),
-      // ]);
-      await Promise.all([
-        queryRunner.manager.save(
-          PayinTransaction,
-          driverTransaction.payinTransaction,
-        ),
-        queryRunner.manager.save(AccountWallet, driver.wallet),
-      ]);
+      await queryRunner.manager.save(
+        PayinTransaction,
+        driverTransaction.payinTransaction,
+      );
       await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
@@ -645,6 +634,79 @@ export class DeliverService {
         message: error.message,
         reason: 'OUR_SYSTEM_BROKEN',
       };
+    }
+  }
+
+  //! Sự kiện nạp rút tiền driver
+  async eventPaypalOrderOccur(
+    eventPaypalOrderOccurDto: EventPaypalOrderOccurDto,
+  ) {
+    let queryRunner;
+    try {
+      const { event_type, resource } = eventPaypalOrderOccurDto;
+      console.log('Event_type', event_type);
+      console.log('Resource', resource);
+
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      const queryBuilder = this.driverTransactionRepository
+        .createQueryBuilder('driverTransaction')
+        .leftJoinAndSelect('driverTransaction.driver', 'driver')
+        .leftJoinAndSelect('driver.wallet', 'accountWallet');
+
+      switch (event_type) {
+        case 'PAYMENT.PAYOUTSBATCH.SUCCESS':
+          //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
+          // order.invoice.status = InvoiceStatus.PAID;
+          // order.invoice.payment.status = PaymentStatus.SUCCESS;
+          // await Promise.all([
+          //   queryRunner.manager.save(Invoice, order.invoice),
+          //   queryRunner.manager.save(Payment, order.invoice.payment),
+          // ]);
+          break;
+        case 'CHECKOUT.ORDER.COMPLETED':
+          // TODO: Lấy thông tin driver dựa theo paypalOrderId
+          const driverTransaction = await queryBuilder
+            .leftJoinAndSelect(
+              'driverTransaction.payinTransaction',
+              'payinTransaction',
+            )
+            .where('payinTransaction.paypalOrderId = :paypalOrderId', {
+              paypalOrderId: resource.id,
+            })
+            .getOne();
+
+          if (!driverTransaction) {
+            console.log('Cannot found drivertransaction');
+            return;
+          }
+
+          //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
+          driverTransaction.payinTransaction.status =
+            EPayinTransactionStatus.SUCCESS;
+          driverTransaction.driver.wallet.mainBalance +=
+            driverTransaction.amount;
+          await Promise.all([
+            queryRunner.manager.save(
+              PayinTransaction,
+              driverTransaction.payinTransaction,
+            ),
+            queryRunner.manager.save(
+              AccountWallet,
+              driverTransaction.driver.wallet,
+            ),
+          ]);
+          break;
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
     }
   }
 }

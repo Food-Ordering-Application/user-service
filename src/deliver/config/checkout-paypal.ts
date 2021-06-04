@@ -23,29 +23,10 @@ export const client = () => {
  *
  */
 function environment() {
-  const clientId = process.env.PAYPAL_CLIENT_ID || 'PAYPAL-SANDBOX-CLIENT-ID';
+  const clientId =
+    process.env.PAYPAL_BUSINESS_CLIENT_ID || 'PAYPAL-SANDBOX-CLIENT-ID';
   const clientSecret =
-    process.env.PAYPAL_CLIENT_SECRET || 'PAYPAL-SANDBOX-CLIENT-SECRET';
+    process.env.PAYPAL_BUSINESS_CLIENT_SECRET || 'PAYPAL-SANDBOX-CLIENT-SECRET';
 
   return new checkoutNodeJssdk.core.SandboxEnvironment(clientId, clientSecret);
 }
-
-// export const prettyPrint = async (jsonData, pre = '') => {
-//   let pretty = '';
-//   function capitalize(string) {
-//     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
-//   }
-//   for (const key in jsonData) {
-//     if (jsonData.hasOwnProperty(key)) {
-//       if (isNaN(key)) pretty += pre + capitalize(key) + ': ';
-//       else pretty += pre + (parseInt(key) + 1) + ': ';
-//       if (typeof jsonData[key] === 'object') {
-//         pretty += '\n';
-//         pretty += await prettyPrint(jsonData[key], pre + '    ');
-//       } else {
-//         pretty += jsonData[key] + '\n';
-//       }
-//     }
-//   }
-//   return pretty;
-// };
