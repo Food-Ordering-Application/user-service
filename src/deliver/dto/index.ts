@@ -6,3 +6,5 @@ export { ApproveDepositMoneyIntoMainAccountWalletDto } from './approve-deposit-m
 export { WithdrawMoneyToPaypalAccountDto } from './withdraw-money-to-paypal-account.dto';
 export { PaypalResource } from './paypal-order-resource.dto';
 export { EventPaypalOrderOccurDto } from './event-paypal-order-occur.dto';
+export { BatchHeader } from './batch-header.dto';
+export { SenderBatchHeader } from './sender-batch-header.dto';

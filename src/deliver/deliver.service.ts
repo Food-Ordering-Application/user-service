@@ -655,16 +655,43 @@ export class DeliverService {
         .createQueryBuilder('driverTransaction')
         .leftJoinAndSelect('driverTransaction.driver', 'driver')
         .leftJoinAndSelect('driver.wallet', 'accountWallet');
-
       switch (event_type) {
         case 'PAYMENT.PAYOUTSBATCH.SUCCESS':
+          console.log(
+            'senderbatchid',
+            resource.batch_header.sender_batch_header.sender_batch_id,
+          );
+          // TODO: Lấy thông tin driver dựa theo paypalOrderId
+          const driverTransaction1 = await queryBuilder
+            .leftJoinAndSelect(
+              'driverTransaction.withdrawTransaction',
+              'withdrawTransaction',
+            )
+            .where('withdrawTransaction.senderBatchId = :senderBatchId', {
+              senderBatchId:
+                resource.batch_header.sender_batch_header.sender_batch_id,
+            })
+            .getOne();
+
+          if (!driverTransaction1) {
+            console.log('Cannot found drivertransaction');
+            return;
+          }
           //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
-          // order.invoice.status = InvoiceStatus.PAID;
-          // order.invoice.payment.status = PaymentStatus.SUCCESS;
-          // await Promise.all([
-          //   queryRunner.manager.save(Invoice, order.invoice),
-          //   queryRunner.manager.save(Payment, order.invoice.payment),
-          // ]);
+          driverTransaction1.withdrawTransaction.status =
+            EWithdrawTransactionStatus.SUCCESS;
+          driverTransaction1.driver.wallet.mainBalance -=
+            driverTransaction1.amount;
+          await Promise.all([
+            queryRunner.manager.save(
+              WithdrawTransaction,
+              driverTransaction1.withdrawTransaction,
+            ),
+            queryRunner.manager.save(
+              AccountWallet,
+              driverTransaction1.driver.wallet,
+            ),
+          ]);
           break;
         case 'CHECKOUT.ORDER.COMPLETED':
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
