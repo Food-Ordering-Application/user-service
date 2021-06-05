@@ -8,6 +8,7 @@ import {
   DepositMoneyIntoMainAccountWalletDto,
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
+  GetListDriverTransactionHistoryDto,
   RegisterDriverDto,
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
@@ -31,6 +32,7 @@ import {
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
+  IDriverTransactionsResponse,
   IGetDriverInformationResponse,
 } from './interfaces';
 import axios from 'axios';
@@ -466,8 +468,6 @@ export class DeliverService {
       //TODO: Đổi trạng thái payinTransaction sang đang xử lý
       driverTransaction.payinTransaction.status =
         EPayinTransactionStatus.PROCESSING;
-      // //TODO: Cộng tiền vào tài khoản chính
-      // driver.wallet.mainBalance += driverTransaction.amount;
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
@@ -734,6 +734,81 @@ export class DeliverService {
       await queryRunner.rollbackTransaction();
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  //! Lấy danh sách lịch sử giao dịch (nạp,rút) tiền của driver
+  async getListDriverTransactionHistory(
+    getListDriverTransactionHistoryDto: GetListDriverTransactionHistoryDto,
+  ): Promise<IDriverTransactionsResponse> {
+    const {
+      callerId,
+      driverId,
+      page = 1,
+      query = 'ALL',
+      size = 10,
+      from = null,
+      to = null,
+    } = getListDriverTransactionHistoryDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy thông tin driver
+      let driverTransactionQueryBuilder = this.driverTransactionRepository
+        .createQueryBuilder('driverTransaction')
+        .leftJoin('driverTransaction.driver', 'driver')
+        .skip((page - 1) * size)
+        .take(size)
+        .where('driver.id = :driverId', { driverId: driverId });
+
+      if (from && to) {
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+
+        driverTransactionQueryBuilder = driverTransactionQueryBuilder
+          .andWhere('driverTransaction.createdAt >= :startDate', {
+            startDate: fromDate.toISOString(),
+          })
+          .andWhere('driverTransaction.createdAt <= :endDate', {
+            endDate: toDate.toISOString(),
+          });
+      }
+
+      if (query === EDriverTransactionType.PAYIN) {
+        driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
+          'driverTransaction.type = :driverTransactionType',
+          {
+            driverTransactionType: EDriverTransactionType.PAYIN,
+          },
+        );
+      } else if (query === EDriverTransactionType.WITHDRAW) {
+        driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
+          'driverTransaction.type = :driverTransactionType',
+          {
+            driverTransactionType: EDriverTransactionType.WITHDRAW,
+          },
+        );
+      }
+
+      const driverTransactions = await driverTransactionQueryBuilder.getMany();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        driverTransactions,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
     }
   }
 }

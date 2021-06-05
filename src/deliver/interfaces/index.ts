@@ -11,3 +11,8 @@ export { IPaypalPayment } from './paypal-payment.interface';
 export { IGetDriverInformationResponse } from './get-driver-information-response.interface';
 export { IGetDriverInformationData } from './get-driver-information-data.interface';
 export { IDepositMoneyIntoMainAccountWalletResponse } from './deposit-money-to-main-wallet-response.interface';
+export { IAccountWallet } from './account-wallet.interface';
+export { IDriverTransaction } from './driver-transaction.interface';
+export { IWithdrawTransaction } from './withdraw-transaction.interface';
+export { IPayinTransaction } from './payin-transaction.interface';
+export { IDriverTransactionsResponse } from './driver-transactions-response.interface';

@@ -7,6 +7,7 @@ import {
   DepositMoneyIntoMainAccountWalletDto,
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
+  GetListDriverTransactionHistoryDto,
   RegisterDriverDto,
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
@@ -15,6 +16,7 @@ import {
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
+  IDriverTransactionsResponse,
   IGetDriverInformationResponse,
 } from './interfaces';
 
@@ -98,5 +100,16 @@ export class DeliverController {
     eventPaypalOrderOccurDto: EventPaypalOrderOccurDto,
   ) {
     this.deliverService.eventPaypalOrderOccur(eventPaypalOrderOccurDto);
+  }
+
+  //! Lấy danh sách lịch sử giao dịch (nạp,rút) tiền của driver
+  @MessagePattern('getListDriverTransactionHistory')
+  async getListDriverTransactionHistory(
+    @Payload()
+    getListDriverTransactionHistoryDto: GetListDriverTransactionHistoryDto,
+  ): Promise<IDriverTransactionsResponse> {
+    return this.deliverService.getListDriverTransactionHistory(
+      getListDriverTransactionHistoryDto,
+    );
   }
 }
