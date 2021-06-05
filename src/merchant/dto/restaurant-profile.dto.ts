@@ -8,6 +8,8 @@ export class RestaurantProfileDto {
   phone: string;
   area: string;
   city: string;
+  cityId: number;
+  areaId: number;
   image: string;
   address: string;
   contractId: number;
@@ -21,7 +23,9 @@ export class RestaurantProfileDto {
       phone,
       image,
       area,
+      areaId,
       city,
+      cityId,
       address,
       contractId,
       isActive,
@@ -34,7 +38,9 @@ export class RestaurantProfileDto {
       phone,
       image,
       area,
+      areaId,
       city,
+      cityId,
       address,
       contractId,
       isActive,

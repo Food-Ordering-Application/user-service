@@ -41,11 +41,17 @@ export class RestaurantProfile {
   @Column({ nullable: true, default: null })
   image: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   area: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   city: string;
+
+  @Column({ nullable: true })
+  areaId: number;
+
+  @Column({ nullable: true })
+  cityId: number;
 
   @Column({ nullable: false })
   address: string;
