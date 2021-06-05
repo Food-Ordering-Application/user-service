@@ -27,6 +27,7 @@ import {
   EPaymentMethod,
   EWithdrawTransactionStatus,
   EOperationType,
+  EGeneralTransactionStatus,
 } from './enums';
 import {
   ICanDriverAcceptOrderResponse,
@@ -746,6 +747,7 @@ export class DeliverService {
       driverId,
       page = 1,
       query = 'ALL',
+      transactionStatus = null,
       size = 10,
       from = null,
       to = null,
@@ -759,10 +761,18 @@ export class DeliverService {
       };
     }
     try {
-      //TODO: Lấy thông tin driver
+      //TODO: Lấy thông tin driverTransaction
       let driverTransactionQueryBuilder = this.driverTransactionRepository
         .createQueryBuilder('driverTransaction')
         .leftJoin('driverTransaction.driver', 'driver')
+        .leftJoinAndSelect(
+          'driverTransaction.withdrawTransaction',
+          'withdrawTransaction',
+        )
+        .leftJoinAndSelect(
+          'driverTransaction.payinTransaction',
+          'payinTransaction',
+        )
         .skip((page - 1) * size)
         .take(size)
         .where('driver.id = :driverId', { driverId: driverId });
@@ -787,6 +797,16 @@ export class DeliverService {
             driverTransactionType: EDriverTransactionType.PAYIN,
           },
         );
+
+        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+          driverTransactionQueryBuilder =
+            driverTransactionQueryBuilder.andWhere(
+              'payinTransaction.status = :payinTransactionStatus',
+              {
+                payinTransactionStatus: transactionStatus,
+              },
+            );
+        }
       } else if (query === EDriverTransactionType.WITHDRAW) {
         driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
           'driverTransaction.type = :driverTransactionType',
@@ -794,6 +814,26 @@ export class DeliverService {
             driverTransactionType: EDriverTransactionType.WITHDRAW,
           },
         );
+
+        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+          driverTransactionQueryBuilder =
+            driverTransactionQueryBuilder.andWhere(
+              'withdrawTransaction.status = :withdrawTransactionStatus',
+              {
+                withdrawTransactionStatus: transactionStatus,
+              },
+            );
+        }
+      } else {
+        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+          driverTransactionQueryBuilder =
+            driverTransactionQueryBuilder.andWhere(
+              'withdrawTransaction.status = :status OR payinTransaction.status = :status',
+              {
+                status: transactionStatus,
+              },
+            );
+        }
       }
 
       const driverTransactions = await driverTransactionQueryBuilder.getMany();
