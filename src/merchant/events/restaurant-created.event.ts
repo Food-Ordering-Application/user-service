@@ -4,8 +4,8 @@ export class RestaurantCreatedEventPayload {
   data: {
     name: string;
     phone: string;
-    area: string;
-    city: string;
+    areaId: number;
+    cityId: number;
     address: string;
     coverImageUrl: string;
     isActive: boolean;
