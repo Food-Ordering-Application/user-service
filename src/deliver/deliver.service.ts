@@ -370,12 +370,13 @@ export class DeliverService {
               currency_code: 'USD',
               value: moneyToDepositUSD.toString(),
             },
-            payee: {
-              merchant_id: 'LU9XXKX9PSTRW',
-            },
+            // payee: {
+            //   merchant_id: 'LU9XXKX9PSTRW',
+            // },
           },
         ],
       });
+
       const paypalOrder = await client().execute(request);
       console.log('OK');
       //TODO: Tạo đối tượng driverTransaction, payinTransaction
@@ -384,12 +385,14 @@ export class DeliverService {
       driverTransaction.driver = driver;
       driverTransaction.type = EDriverTransactionType.PAYIN;
       await queryRunner.manager.save(DriverTransaction, driverTransaction);
+      console.log('driverTransaction', driverTransaction);
 
       const payinTransaction = new PayinTransaction();
       payinTransaction.paypalOrderId = paypalOrder.result.id;
       payinTransaction.status = EPayinTransactionStatus.PENDING_USER_ACTION;
       payinTransaction.driverTransaction = driverTransaction;
       await queryRunner.manager.save(PayinTransaction, payinTransaction);
+      console.log('payinTransaction', payinTransaction);
       await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
@@ -446,15 +449,6 @@ export class DeliverService {
           message: 'DriverTransaction not found',
         };
       }
-
-      //TODO: Lấy AccountWallet của driver
-      const driver = await this.driverRepository
-        .createQueryBuilder('driver')
-        .leftJoinAndSelect('driver.wallet', 'accountWallet')
-        .where('driver.id = :driverId', {
-          driverId: driverId,
-        })
-        .getOne();
 
       //TODO: Call PayPal to capture the order
       const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
@@ -683,6 +677,7 @@ export class DeliverService {
             EWithdrawTransactionStatus.SUCCESS;
           driverTransaction1.driver.wallet.mainBalance -=
             driverTransaction1.amount;
+
           await Promise.all([
             queryRunner.manager.save(
               WithdrawTransaction,
@@ -728,7 +723,6 @@ export class DeliverService {
           ]);
           break;
       }
-
       await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);
