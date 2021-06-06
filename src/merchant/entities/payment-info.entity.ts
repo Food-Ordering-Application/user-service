@@ -8,7 +8,7 @@ import {
 import { DriverPaymentInfo } from '../../deliver/entities';
 import { PayPalPayment } from './paypal-payment.entity';
 
-@Entity()
+@Entity('payment_info')
 export class PaymentInfo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
