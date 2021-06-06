@@ -8,11 +8,13 @@ import {
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
   GetListDriverTransactionHistoryDto,
+  GetMainAccountWalletBalanceDto,
   RegisterDriverDto,
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
 import { CheckDriverAccountBalanceDto } from './dto/check-driver-account-balance.dto';
 import {
+  IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
@@ -110,6 +112,17 @@ export class DeliverController {
   ): Promise<IDriverTransactionsResponse> {
     return this.deliverService.getListDriverTransactionHistory(
       getListDriverTransactionHistoryDto,
+    );
+  }
+
+  //! Lấy thông tin balance của tài khoản chính
+  @MessagePattern('getMainAccountWalletBalance')
+  async getMainAccountWalletBalance(
+    @Payload()
+    getMainAccountWalletBalanceDto: GetMainAccountWalletBalanceDto,
+  ): Promise<IAccountWalletResponse> {
+    return this.deliverService.getMainAccountWalletBalance(
+      getMainAccountWalletBalanceDto,
     );
   }
 }

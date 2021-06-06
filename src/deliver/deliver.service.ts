@@ -9,6 +9,7 @@ import {
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
   GetListDriverTransactionHistoryDto,
+  GetMainAccountWalletBalanceDto,
   RegisterDriverDto,
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
@@ -30,6 +31,7 @@ import {
   EGeneralTransactionStatus,
 } from './enums';
 import {
+  IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
@@ -370,13 +372,13 @@ export class DeliverService {
               currency_code: 'USD',
               value: moneyToDepositUSD.toString(),
             },
+            payee: {
+              merchant_id: 'LU9XXKX9PSTRW',
+            },
           },
         ],
       });
-      // ,
-      // // payee: {
-      // //   merchant_id: 'LU9XXKX9PSTRW',
-      // // },
+
       const paypalOrder = await client().execute(request);
       console.log('OK');
       //TODO: Tạo đối tượng driverTransaction, payinTransaction
@@ -836,6 +838,48 @@ export class DeliverService {
         status: HttpStatus.OK,
         message: 'Successfully',
         driverTransactions,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Lấy thông tin balance của tài khoản chính
+  async getMainAccountWalletBalance(
+    getMainAccountWalletBalanceDto: GetMainAccountWalletBalanceDto,
+  ): Promise<IAccountWalletResponse> {
+    const { callerId, driverId } = getMainAccountWalletBalanceDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy thông tin accountWallet
+      const driver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .leftJoinAndSelect('driver.wallet', 'accountWallet')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      if (!driver) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Account wallet not found with the associated driverId',
+        };
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        accountWallet: driver.wallet,
       };
     } catch (error) {
       this.logger.error(error);

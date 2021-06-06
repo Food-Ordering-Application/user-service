@@ -9,3 +9,4 @@ export { EventPaypalOrderOccurDto } from './event-paypal-order-occur.dto';
 export { BatchHeader } from './batch-header.dto';
 export { SenderBatchHeader } from './sender-batch-header.dto';
 export { GetListDriverTransactionHistoryDto } from './get-list-transaction-history.dto';
+export { GetMainAccountWalletBalanceDto } from './get-main-account-balance.dto';
