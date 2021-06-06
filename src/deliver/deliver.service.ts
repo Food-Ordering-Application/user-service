@@ -370,13 +370,13 @@ export class DeliverService {
               currency_code: 'USD',
               value: moneyToDepositUSD.toString(),
             },
-            // payee: {
-            //   merchant_id: 'LU9XXKX9PSTRW',
-            // },
           },
         ],
       });
-
+      // ,
+      // // payee: {
+      // //   merchant_id: 'LU9XXKX9PSTRW',
+      // // },
       const paypalOrder = await client().execute(request);
       console.log('OK');
       //TODO: Tạo đối tượng driverTransaction, payinTransaction
