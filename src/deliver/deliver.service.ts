@@ -11,6 +11,7 @@ import {
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   RegisterDriverDto,
+  UpdateIsActiveOfDriverDto,
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
 import {
@@ -29,6 +30,7 @@ import {
   EWithdrawTransactionStatus,
   EOperationType,
   EGeneralTransactionStatus,
+  EIsActive,
 } from './enums';
 import {
   IAccountWalletResponse,
@@ -37,6 +39,7 @@ import {
   IDriverResponse,
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
+  IIsActiveResponse,
 } from './interfaces';
 import axios from 'axios';
 import * as paypal from '@paypal/checkout-server-sdk';
@@ -895,6 +898,54 @@ export class DeliverService {
         status: HttpStatus.OK,
         message: 'Successfully',
         accountWallet: driver.wallet,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Update thông tin isActive của driver
+  async updateIsActiveOfDriver(
+    updateIsActiveOfDriverDto: UpdateIsActiveOfDriverDto,
+  ): Promise<IIsActiveResponse> {
+    const { callerId, driverId, isActive } = updateIsActiveOfDriverDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy thông tin driver
+      const driver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      if (!driver) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Driver not found with the associated driverId',
+        };
+      }
+
+      //TODO: update isActive driver
+      if (isActive === EIsActive.TRUE) {
+        driver.isActive = true;
+      } else {
+        driver.isActive = false;
+      }
+      await this.driverRepository.save(driver);
+      return {
+        status: HttpStatus.OK,
+        message: 'Update isActive successfully',
+        isActive: driver.isActive,
       };
     } catch (error) {
       this.logger.error(error);

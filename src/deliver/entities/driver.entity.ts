@@ -48,6 +48,8 @@ export class Driver {
   isVerified?: boolean;
   @Column({ default: false })
   isBanned?: boolean;
+  @Column({ default: false })
+  isActive?: boolean;
 
   //? Relation
   @OneToOne(() => AccountWallet, (wallet) => wallet.driver)

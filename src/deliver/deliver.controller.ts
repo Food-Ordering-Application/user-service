@@ -10,6 +10,7 @@ import {
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   RegisterDriverDto,
+  UpdateIsActiveOfDriverDto,
   WithdrawMoneyToPaypalAccountDto,
 } from './dto';
 import { CheckDriverAccountBalanceDto } from './dto/check-driver-account-balance.dto';
@@ -20,6 +21,7 @@ import {
   IDriverResponse,
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
+  IIsActiveResponse,
 } from './interfaces';
 
 @Controller()
@@ -123,6 +125,17 @@ export class DeliverController {
   ): Promise<IAccountWalletResponse> {
     return this.deliverService.getMainAccountWalletBalance(
       getMainAccountWalletBalanceDto,
+    );
+  }
+
+  //! Update thông tin isActive của driver
+  @MessagePattern('updateIsActiveOfDriver')
+  async updateIsActiveOfDriver(
+    @Payload()
+    updateIsActiveOfDriverDto: UpdateIsActiveOfDriverDto,
+  ): Promise<IIsActiveResponse> {
+    return this.deliverService.updateIsActiveOfDriver(
+      updateIsActiveOfDriverDto,
     );
   }
 }
