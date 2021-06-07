@@ -4,5 +4,5 @@ import { IDriver } from './driver.interface';
 export interface IDriverResponse {
   status: number;
   message: string;
-  driver: IDriver | Driver | null;
+  driver?: IDriver | Driver | null;
 }

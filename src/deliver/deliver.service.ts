@@ -123,6 +123,21 @@ export class DeliverService {
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
+      //TODO: Check nếu đã có driver với sđt đó r
+      const oldDriver = await this.driverRepository
+        .createQueryBuilder('driver')
+        .where('driver.phoneNumber = :phoneNumber', {
+          phoneNumber: phoneNumber,
+        })
+        .getOne();
+
+      if (oldDriver) {
+        return {
+          status: HttpStatus.CONFLICT,
+          message: 'Already have driver with that phoneNumber in the database',
+        };
+      }
+
       //TODO: Tạo bảng AccountWallet
       const accountWallet = new AccountWallet();
       accountWallet.mainBalance = 0;
