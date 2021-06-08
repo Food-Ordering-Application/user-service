@@ -487,14 +487,14 @@ export class DeliverService {
         capture.result.purchase_units[0].payments.captures[0].id;
       //TODO: Lưu lại captureId
       driverTransaction.payinTransaction.captureId = captureID;
-      //TODO: Đổi trạng thái payinTransaction sang đang xử lý
-      driverTransaction.payinTransaction.status =
-        EPayinTransactionStatus.PROCESSING;
-      // //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
+      // //TODO: Đổi trạng thái payinTransaction sang đang xử lý
       // driverTransaction.payinTransaction.status =
-      //   EPayinTransactionStatus.SUCCESS;
-      // driverTransaction.driver.wallet.mainBalance += driverTransaction.amount;
-      // queryRunner = this.connection.createQueryRunner();
+      //   EPayinTransactionStatus.PROCESSING;
+      //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
+      driverTransaction.payinTransaction.status =
+        EPayinTransactionStatus.SUCCESS;
+      driverTransaction.driver.wallet.mainBalance += driverTransaction.amount;
+      queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
       await queryRunner.manager.save(
