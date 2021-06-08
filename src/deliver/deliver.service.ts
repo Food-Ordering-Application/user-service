@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
 import { Connection, Repository } from 'typeorm';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
@@ -40,6 +40,7 @@ import {
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
   IIsActiveResponse,
+  IMainBalanceResponse,
 } from './interfaces';
 import axios from 'axios';
 import * as paypal from '@paypal/checkout-server-sdk';
@@ -48,6 +49,8 @@ import { client } from './config/checkout-paypal';
 import { client as payoutClient } from './config/payout-paypal';
 import { ISimpleResponse } from '../customer/interfaces';
 import * as uniqid from 'uniqid';
+import { ClientProxy } from '@nestjs/microservices';
+import { NOTIFICATION_SERVICE } from '../constants';
 
 const DEFAULT_EXCHANGE_RATE = 0.00004;
 const COMISSION_FEE_PERCENT = 0.2;
@@ -79,6 +82,8 @@ export class DeliverService {
     private accountTransactionRepository: Repository<AccountTransaction>,
     @InjectConnection()
     private connection: Connection,
+    @Inject(NOTIFICATION_SERVICE)
+    private notificationServiceClient: ClientProxy,
   ) {}
 
   //! Tìm kiếm driver bằng số điện thoại
@@ -434,7 +439,7 @@ export class DeliverService {
   //! ApproveOrder Nạp tiền vào tài khoản chính driver
   async approveDepositMoneyIntoMainAccountWallet(
     approveDepositMoneyIntoMainAccountWalletDto: ApproveDepositMoneyIntoMainAccountWalletDto,
-  ): Promise<ISimpleResponse> {
+  ): Promise<IMainBalanceResponse> {
     let queryRunner;
     try {
       const { paypalOrderId, callerId, driverId } =
@@ -480,9 +485,13 @@ export class DeliverService {
         capture.result.purchase_units[0].payments.captures[0].id;
       //TODO: Lưu lại captureId
       driverTransaction.payinTransaction.captureId = captureID;
-      //TODO: Đổi trạng thái payinTransaction sang đang xử lý
+      // //TODO: Đổi trạng thái payinTransaction sang đang xử lý
+      // driverTransaction.payinTransaction.status =
+      //   EPayinTransactionStatus.PROCESSING;
+      //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
       driverTransaction.payinTransaction.status =
-        EPayinTransactionStatus.PROCESSING;
+        EPayinTransactionStatus.SUCCESS;
+      driverTransaction.driver.wallet.mainBalance += driverTransaction.amount;
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
@@ -494,6 +503,7 @@ export class DeliverService {
       return {
         status: HttpStatus.OK,
         message: 'Approve deposit money into main account wallet successfully',
+        mainBalance: driverTransaction.driver.wallet.mainBalance,
       };
     } catch (error) {
       this.logger.error(error);
@@ -698,6 +708,11 @@ export class DeliverService {
           driverTransaction1.driver.wallet.mainBalance -=
             driverTransaction1.amount;
 
+          this.notificationServiceClient.emit('mainBalanceChange', {
+            driverId: driverTransaction1.driver.id,
+            mainBalance: driverTransaction1.driver.wallet.mainBalance,
+          });
+
           await Promise.all([
             queryRunner.manager.save(
               WithdrawTransaction,
@@ -731,6 +746,7 @@ export class DeliverService {
             EPayinTransactionStatus.SUCCESS;
           driverTransaction.driver.wallet.mainBalance +=
             driverTransaction.amount;
+
           await Promise.all([
             queryRunner.manager.save(
               PayinTransaction,

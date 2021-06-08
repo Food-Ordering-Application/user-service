@@ -22,6 +22,7 @@ import {
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
   IIsActiveResponse,
+  IMainBalanceResponse,
 } from './interfaces';
 
 @Controller()
@@ -80,7 +81,7 @@ export class DeliverController {
   async approveDepositMoneyIntoMainAccountWallet(
     @Payload()
     approveDepositMoneyIntoMainAccountWalletDto: ApproveDepositMoneyIntoMainAccountWalletDto,
-  ): Promise<ISimpleResponse> {
+  ): Promise<IMainBalanceResponse> {
     return this.deliverService.approveDepositMoneyIntoMainAccountWallet(
       approveDepositMoneyIntoMainAccountWalletDto,
     );

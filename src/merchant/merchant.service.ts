@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
-import { RESTAURANT_SERVICE } from './../constants';
+import { RESTAURANT_SERVICE } from '../constants';
 import {
   AddPaypalPaymentDto,
   CreateMerchantDto,

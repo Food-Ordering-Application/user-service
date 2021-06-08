@@ -18,3 +18,4 @@ export { IPayinTransaction } from './payin-transaction.interface';
 export { IDriverTransactionsResponse } from './driver-transactions-response.interface';
 export { IAccountWalletResponse } from './account-wallet-response.interface';
 export { IIsActiveResponse } from './isActive-response.interface';
+export { IMainBalanceResponse } from './main-balance-response.interface';

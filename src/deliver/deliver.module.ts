@@ -13,6 +13,9 @@ import {
   WithdrawTransaction,
 } from './entities';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { NOTIFICATION_SERVICE } from '../constants';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -27,6 +30,23 @@ import { PaymentInfo, PayPalPayment } from '../merchant/entities';
       DriverTransaction,
       PayinTransaction,
       WithdrawTransaction,
+    ]),
+    ClientsModule.registerAsync([
+      {
+        name: NOTIFICATION_SERVICE,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get('AMQP_URL') as string],
+            queue: configService.get('NOTIFICATION_AMQP_QUEUE'),
+            queueOptions: {
+              durable: false,
+            },
+          },
+        }),
+      },
     ]),
   ],
   controllers: [DeliverController],
