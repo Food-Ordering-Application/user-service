@@ -24,4 +24,7 @@ export class AccountTransaction {
   //? Relation
   @ManyToOne(() => Driver, (driver) => driver.accountTransactions)
   driver: Driver;
+
+  @Column()
+  driverId: string;
 }

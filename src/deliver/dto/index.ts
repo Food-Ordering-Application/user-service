@@ -11,3 +11,5 @@ export { SenderBatchHeader } from './sender-batch-header.dto';
 export { GetListDriverTransactionHistoryDto } from './get-list-transaction-history.dto';
 export { GetMainAccountWalletBalanceDto } from './get-main-account-balance.dto';
 export { UpdateIsActiveOfDriverDto } from './update-isActive-of-driver.dto';
+export { OrderHasBeenCompletedEventDto } from './order-has-been-completed-event.dto';
+export { OrderHasBeenAssignedToDriverEventDto } from './order-has-been-assigned-to-driver-event.dto';

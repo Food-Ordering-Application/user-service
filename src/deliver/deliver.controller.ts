@@ -9,6 +9,8 @@ import {
   GetDriverInformationDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
+  OrderHasBeenAssignedToDriverEventDto,
+  OrderHasBeenCompletedEventDto,
   RegisterDriverDto,
   UpdateIsActiveOfDriverDto,
   WithdrawMoneyToPaypalAccountDto,
@@ -137,6 +139,28 @@ export class DeliverController {
   ): Promise<IIsActiveResponse> {
     return this.deliverService.updateIsActiveOfDriver(
       updateIsActiveOfDriverDto,
+    );
+  }
+
+  //! Sự kiện driver accept don
+  @EventPattern('orderHasBeenAssignedToDriverEvent')
+  async orderHasBeenAssignedToDriverEvent(
+    @Payload()
+    orderHasBeenAssignedToDriverEventDto: OrderHasBeenAssignedToDriverEventDto,
+  ) {
+    this.deliverService.orderHasBeenAssignedToDriverEvent(
+      orderHasBeenAssignedToDriverEventDto,
+    );
+  }
+
+  //! Sự kiện driver hoàn thành đơn
+  @EventPattern('orderHasBeenCompletedEvent')
+  async orderHasBeenCompletedEvent(
+    @Payload()
+    orderHasBeenCompletedEventDto: OrderHasBeenCompletedEventDto,
+  ) {
+    this.deliverService.orderHasBeenCompletedEvent(
+      orderHasBeenCompletedEventDto,
     );
   }
 }

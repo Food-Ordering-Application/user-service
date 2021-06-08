@@ -25,4 +25,7 @@ export class DeliveryHistory {
   //? Relation
   @ManyToOne(() => Driver, (driver) => driver.deliveryHistories)
   driver: Driver;
+
+  @Column()
+  driverId: string;
 }

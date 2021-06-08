@@ -10,6 +10,8 @@ import {
   GetDriverInformationDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
+  OrderHasBeenAssignedToDriverEventDto,
+  OrderHasBeenCompletedEventDto,
   RegisterDriverDto,
   UpdateIsActiveOfDriverDto,
   WithdrawMoneyToPaypalAccountDto,
@@ -17,6 +19,7 @@ import {
 import {
   AccountTransaction,
   AccountWallet,
+  DeliveryHistory,
   Driver,
   DriverPaymentInfo,
   DriverTransaction,
@@ -214,7 +217,6 @@ export class DeliverService {
     checkDriverAccountBalanceDto: CheckDriverAccountBalanceDto,
   ): Promise<ICanDriverAcceptOrderResponse> {
     const { order, driverId } = checkDriverAccountBalanceDto;
-    let queryRunner;
     try {
       //TODO: Lấy thông tin account balance driver
       const accountWallet = await this.accountWalletRepository
@@ -222,10 +224,6 @@ export class DeliverService {
         .leftJoinAndSelect('accountW.driver', 'driver')
         .where('driver.id = :driverId', { driverId: driverId })
         .getOne();
-
-      queryRunner = this.connection.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
 
       switch (order.invoice.payment.method) {
         //TODO: Trường hợp COD (Trả sau)
@@ -245,19 +243,6 @@ export class DeliverService {
               canAccept: false,
             };
           } else {
-            //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
-            const moneyToDeduct =
-              COMISSION_FEE_PERCENT * order.delivery.shippingFee;
-            accountWallet.mainBalance -= moneyToDeduct;
-            //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
-            const accountTransaction = new AccountTransaction();
-            accountTransaction.amount = moneyToDeduct;
-            accountTransaction.driver = accountWallet.driver;
-            accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
-            await Promise.all([
-              queryRunner.manager.save(AccountWallet, accountWallet),
-              queryRunner.manager.save(AccountTransaction, accountTransaction),
-            ]);
             return {
               status: HttpStatus.OK,
               message: 'Driver can accept order',
@@ -283,20 +268,6 @@ export class DeliverService {
               canAccept: false,
             };
           } else {
-            //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
-            const moneyToDeduct =
-              COMISSION_FEE_PERCENT * order.delivery.shippingFee +
-              order.subTotal;
-            accountWallet.mainBalance -= moneyToDeduct;
-            //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
-            const accountTransaction = new AccountTransaction();
-            accountTransaction.amount = moneyToDeduct;
-            accountTransaction.driver = accountWallet.driver;
-            accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
-            await Promise.all([
-              queryRunner.manager.save(AccountWallet, accountWallet),
-              queryRunner.manager.save(AccountTransaction, accountTransaction),
-            ]);
             return {
               status: HttpStatus.OK,
               message: 'Driver can accept order',
@@ -304,17 +275,13 @@ export class DeliverService {
             };
           }
       }
-      await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);
-      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         canAccept: false,
       };
-    } finally {
-      await queryRunner.release();
     }
   }
 
@@ -977,6 +944,122 @@ export class DeliverService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
       };
+    }
+  }
+
+  //! Sự kiện driver accept don
+  async orderHasBeenAssignedToDriverEvent(
+    orderHasBeenAssignedToDriverEventDto: OrderHasBeenAssignedToDriverEventDto,
+  ) {
+    let queryRunner;
+    try {
+      const { order } = orderHasBeenAssignedToDriverEventDto;
+
+      console.dir(order, { depth: 4 });
+
+      //TODO: Lấy thông tin account balance driver
+      const accountWallet = await this.accountWalletRepository
+        .createQueryBuilder('accountW')
+        .leftJoinAndSelect('accountW.driver', 'driver')
+        .where('driver.id = :driverId', { driverId: order.delivery.driverId })
+        .getOne();
+
+      if (!accountWallet) {
+        console.log('Account wallet not found with that driverId');
+        return;
+      }
+
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
+        //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
+        const moneyToDeduct =
+          COMISSION_FEE_PERCENT * order.delivery.shippingFee + order.subTotal;
+        accountWallet.mainBalance -= moneyToDeduct;
+        //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
+        const accountTransaction = new AccountTransaction();
+        accountTransaction.amount = moneyToDeduct;
+        accountTransaction.driver = accountWallet.driver;
+        accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
+        await Promise.all([
+          queryRunner.manager.save(AccountWallet, accountWallet),
+          queryRunner.manager.save(AccountTransaction, accountTransaction),
+        ]);
+      } else if (order.invoice.payment.method === EPaymentMethod.COD) {
+        //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
+        const moneyToDeduct =
+          COMISSION_FEE_PERCENT * order.delivery.shippingFee;
+        accountWallet.mainBalance -= moneyToDeduct;
+        //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
+        const accountTransaction = new AccountTransaction();
+        accountTransaction.amount = moneyToDeduct;
+        accountTransaction.driver = accountWallet.driver;
+        accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
+        await Promise.all([
+          queryRunner.manager.save(AccountWallet, accountWallet),
+          queryRunner.manager.save(AccountTransaction, accountTransaction),
+        ]);
+      }
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
+    }
+  }
+
+  //! Sự kiện driver hoan thanh don
+  async orderHasBeenCompletedEvent(
+    orderHasBeenCompletedEventDto: OrderHasBeenCompletedEventDto,
+  ) {
+    let queryRunner;
+    try {
+      const { order } = orderHasBeenCompletedEventDto;
+
+      console.dir(order, { depth: 4 });
+
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      const promises: (() => Promise<any>)[] = [];
+      //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
+      if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
+        const moneyToAdd = order.grandTotal;
+        console.log('MoneyToAdd', moneyToAdd);
+        //TODO: Tạo đối tượng accountTransaction type = SYSTEM_ADD
+        const accountTransaction = new AccountTransaction();
+        accountTransaction.amount = moneyToAdd;
+        accountTransaction.driverId = order.delivery.driverId;
+        accountTransaction.operationType = EOperationType.SYSTEM_ADD;
+        const updateAccountTransaction = () =>
+          queryRunner.manager.save(AccountTransaction, accountTransaction);
+        promises.push(updateAccountTransaction);
+      }
+      //TODO: Tạo đối tượng DeliveryHistory
+      const deliveryHistory = new DeliveryHistory();
+      deliveryHistory.driverId = order.delivery.driverId;
+      deliveryHistory.orderId = order.id;
+      deliveryHistory.deliveryId = order.delivery.id;
+      deliveryHistory.shippingFee = order.delivery.shippingFee;
+      deliveryHistory.totalDistance = order.delivery.distance;
+      const createDeliveryHistory = () =>
+        queryRunner.manager.save(DeliveryHistory, deliveryHistory);
+      promises.push(createDeliveryHistory);
+
+      await Promise.all(promises.map((callback) => callback()));
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 }
