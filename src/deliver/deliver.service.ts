@@ -432,7 +432,9 @@ export class DeliverService {
         message: error.message,
       };
     } finally {
-      await queryRunner.release();
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -513,7 +515,9 @@ export class DeliverService {
         message: error.message,
       };
     } finally {
-      await queryRunner.release();
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -650,7 +654,9 @@ export class DeliverService {
           reason: 'PAYPAL_BROKEN',
         };
       } finally {
-        await queryRunner.release();
+        if (queryRunner) {
+          await queryRunner.release();
+        }
       }
     } catch (error) {
       this.logger.error(error);
@@ -764,7 +770,9 @@ export class DeliverService {
       this.logger.error(error);
       await queryRunner.rollbackTransaction();
     } finally {
-      await queryRunner.release();
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
