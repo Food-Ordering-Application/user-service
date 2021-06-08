@@ -4,5 +4,5 @@ import { IGetDriverInformationData } from './get-driver-information-data.interfa
 export interface IGetDriverInformationResponse {
   status: number;
   message: string;
-  driverInfo: IGetDriverInformationData | Driver | null;
+  driver: IGetDriverInformationData | Driver | null;
 }

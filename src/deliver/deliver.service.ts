@@ -307,14 +307,14 @@ export class DeliverService {
       return {
         status: HttpStatus.OK,
         message: 'DriverInfo fetched successfully',
-        driverInfo: driver,
+        driver: driver,
       };
     } catch (error) {
       this.logger.error(error);
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
-        driverInfo: null,
+        driver: null,
       };
     }
   }
