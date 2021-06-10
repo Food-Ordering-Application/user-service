@@ -16,11 +16,13 @@ import {
   CreateMerchantDto,
   FetchPaymentDto,
   FetchRestaurantProfilesDto,
+  GetIsAutoConfirmDto,
   GetPayPalOnboardStatusDto,
   GetPayPalSignUpLinkDto,
   MerchantDto,
   PaymentDto,
   RestaurantProfileDto,
+  UpdateIsAutoConfirmOrderDto,
   VerifyPosAppKeyDto,
   VerifyRestaurantDto,
 } from './dto';
@@ -37,11 +39,13 @@ import { PayPalClient } from './helpers/paypal-client';
 import {
   IGetPayPalOnboardStatusResponse,
   IGetPayPalSignUpLinkResponse,
+  IIsAutoConfirmResponse,
   IMerchantServiceAddPaypalPaymentResponse,
   IMerchantServiceFetchPaymentOfRestaurantResponse,
   IMerchantServiceFetchRestaurantProfilesResponse,
   IMerchantServiceResponse,
 } from './interfaces';
+import { ETrueFalse } from '../shared/enum';
 @Injectable()
 export class MerchantService {
   private readonly logger = new Logger('MerchantService');
@@ -61,14 +65,8 @@ export class MerchantService {
   ) {}
 
   async create(createMerchantDto: CreateMerchantDto) {
-    const {
-      username,
-      password,
-      email,
-      phone,
-      fullName,
-      IDNumber,
-    } = createMerchantDto;
+    const { username, password, email, phone, fullName, IDNumber } =
+      createMerchantDto;
     const merchantWithThisUsername = await this.merchantsRepository.findOne({
       username,
     });
@@ -193,12 +191,13 @@ export class MerchantService {
     restaurantProfile.isVerified = true;
     await this.getVerifiedRestaurantProfile(restaurantProfile);
 
-    const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
-      restaurantId,
-      data: {
-        isVerified: true,
-      },
-    };
+    const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload =
+      {
+        restaurantId,
+        data: {
+          isVerified: true,
+        },
+      };
     this.restaurantServiceClient.emit(
       { event: 'restaurant_profile_updated' },
       restaurantProfileUpdatedEventPayload,
@@ -317,13 +316,11 @@ export class MerchantService {
   ): Promise<IMerchantServiceFetchRestaurantProfilesResponse> {
     const { size, page } = fetchRestaurantsOfMerchantDto;
 
-    const [
-      results,
-      total,
-    ] = await this.restaurantProfileRepository.findAndCount({
-      take: size,
-      skip: page * size,
-    });
+    const [results, total] =
+      await this.restaurantProfileRepository.findAndCount({
+        take: size,
+        skip: page * size,
+      });
 
     return {
       status: HttpStatus.OK,
@@ -573,12 +570,13 @@ export class MerchantService {
       paypal.isOnboard = true;
       await this.paypalPaymentRepository.save(paypal);
 
-      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload = {
-        restaurantId,
-        data: {
-          merchantIdInPayPal,
-        },
-      };
+      const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload =
+        {
+          restaurantId,
+          data: {
+            merchantIdInPayPal,
+          },
+        };
 
       this.restaurantServiceClient.emit(
         { event: 'restaurant_profile_updated' },
@@ -598,6 +596,98 @@ export class MerchantService {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: e.message,
         data: null,
+      };
+    }
+  }
+
+  //! Update thông tin isAutoConfirm của merchant
+  async updateIsAutoConfirmOrder(
+    updateIsAutoConfirmOrderDto: UpdateIsAutoConfirmOrderDto,
+  ): Promise<IIsAutoConfirmResponse> {
+    const { callerId, merchantId, isAutoConfirm, restaurantProfileId } =
+      updateIsAutoConfirmOrderDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (merchantId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy thông tin restaurantProfile
+      const restaurantProfile = await this.restaurantProfileRepository
+        .createQueryBuilder('resProfile')
+        .where('resProfile.id = :restaurantProfileId', {
+          restaurantProfileId: restaurantProfileId,
+        })
+        .andWhere('resProfile.merchantId = :merchantId', {
+          merchantId: merchantId,
+        })
+        .getOne();
+
+      if (!restaurantProfile) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message:
+            'restaurantProfile not found with the associated restaurantProfileId && merchantId',
+        };
+      }
+
+      //TODO: update isAutoConfirm restaurantProfile
+      if (isAutoConfirm === ETrueFalse.TRUE) {
+        restaurantProfile.isAutoConfirm = true;
+      } else {
+        restaurantProfile.isAutoConfirm = false;
+      }
+      await this.restaurantProfileRepository.save(restaurantProfile);
+      return {
+        status: HttpStatus.OK,
+        message: 'Update isAutoConfirm successfully',
+        isAutoConfirm: restaurantProfile.isAutoConfirm,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Lấy thông tin isAutoConfirm của merchant
+  async getIsAutoConfirm(
+    getIsAutoConfirmDto: GetIsAutoConfirmDto,
+  ): Promise<IIsAutoConfirmResponse> {
+    const { restaurantId } = getIsAutoConfirmDto;
+
+    try {
+      //TODO: Lấy thông tin restaurantProfile
+      const restaurantProfile = await this.restaurantProfileRepository
+        .createQueryBuilder('resProfile')
+        .where('resProfile.restaurantId = :restaurantId', {
+          restaurantId: restaurantId,
+        })
+        .getOne();
+
+      if (!restaurantProfile) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message:
+            'restaurantProfile not found with the associated restaurantId',
+        };
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Fetch isAutoConfirm successfully',
+        isAutoConfirm: restaurantProfile.isAutoConfirm,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
       };
     }
   }

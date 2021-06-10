@@ -11,3 +11,5 @@ export { VerifyRestaurantDto } from './verify-restaurant.dto';
 export { AddPaypalPaymentDto } from './add-paypal-payment.dto';
 export { GetPayPalSignUpLinkDto } from './get-paypal-signup-link.dto';
 export { GetPayPalOnboardStatusDto } from './get-paypal-onboard-status.dto';
+export { UpdateIsAutoConfirmOrderDto } from './update-isautoconfirm-order.dto';
+export { GetIsAutoConfirmDto } from './get-isautoconfirm-order.dto';

@@ -10,6 +10,8 @@ import {
   AddPaypalPaymentDto,
   GetPayPalSignUpLinkDto,
   GetPayPalOnboardStatusDto,
+  UpdateIsAutoConfirmOrderDto,
+  GetIsAutoConfirmDto,
 } from './dto';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import {
@@ -19,6 +21,7 @@ import {
   IMerchantServiceAddPaypalPaymentResponse,
   IGetPayPalSignUpLinkResponse,
   IGetPayPalOnboardStatusResponse,
+  IIsAutoConfirmResponse,
 } from './interfaces';
 import { MerchantService } from './merchant.service';
 
@@ -110,5 +113,25 @@ export class MerchantController {
     return await this.merchantService.getPayPalOnboardStatus(
       getPayPalOnboardStatusDto,
     );
+  }
+
+  //! Update thông tin isAutoConfirm của merchant
+  @MessagePattern('updateIsAutoConfirmOrder')
+  async updateIsAutoConfirmOrder(
+    @Payload()
+    updateIsAutoConfirmOrderDto: UpdateIsAutoConfirmOrderDto,
+  ): Promise<IIsAutoConfirmResponse> {
+    return this.merchantService.updateIsAutoConfirmOrder(
+      updateIsAutoConfirmOrderDto,
+    );
+  }
+
+  //! Lấy thông tin isAutoConfirm của merchant
+  @MessagePattern('getIsAutoConfirm')
+  async getIsAutoConfirm(
+    @Payload()
+    getIsAutoConfirmDto: GetIsAutoConfirmDto,
+  ): Promise<IIsAutoConfirmResponse> {
+    return this.merchantService.getIsAutoConfirm(getIsAutoConfirmDto);
   }
 }

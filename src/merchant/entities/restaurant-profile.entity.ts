@@ -72,6 +72,9 @@ export class RestaurantProfile {
   @Column()
   isBanned: boolean;
 
+  @Column({ default: true })
+  isAutoConfirm: boolean;
+
   @OneToOne(() => PaymentInfo, { cascade: ['insert', 'update'] })
   @JoinColumn()
   paymentInfo: PaymentInfo;

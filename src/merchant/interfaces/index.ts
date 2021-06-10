@@ -5,3 +5,4 @@ export { IMerchantServiceAddPaypalPaymentResponse } from './merchant-service-add
 export { IPayPalOnboardStatusResponse } from './paypal-onboard-status-response.interface';
 export { IGetPayPalSignUpLinkResponse } from './get-paypal-signup-link-response.interface';
 export { IGetPayPalOnboardStatusResponse } from './get-paypal-onboard-status-response.interface';
+export { IIsAutoConfirmResponse } from './isautoconfirm-response.interface';
