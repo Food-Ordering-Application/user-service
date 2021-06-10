@@ -54,6 +54,7 @@ import { ISimpleResponse } from '../customer/interfaces';
 import * as uniqid from 'uniqid';
 import { ClientProxy } from '@nestjs/microservices';
 import { NOTIFICATION_SERVICE } from '../constants';
+import momenttimezone from 'moment-timezone';
 
 const DEFAULT_EXCHANGE_RATE = 0.00004;
 const COMISSION_FEE_PERCENT = 0.2;
@@ -783,15 +784,21 @@ export class DeliverService {
         .where('driver.id = :driverId', { driverId: driverId });
 
       if (from && to) {
-        const fromDate = new Date(from);
-        const toDate = new Date(to);
+        const fromDate = momenttimezone
+          .tz(from, 'Asia/Ho_Chi_Minh')
+          .utc()
+          .format();
+        const toDate = momenttimezone.tz(to, 'Asia/Ho_Chi_Minh').utc().format();
+
+        console.log('fromDate', fromDate);
+        console.log('toDate', toDate);
 
         driverTransactionQueryBuilder = driverTransactionQueryBuilder
           .andWhere('driverTransaction.createdAt >= :startDate', {
-            startDate: fromDate.toISOString(),
+            startDate: fromDate,
           })
           .andWhere('driverTransaction.createdAt <= :endDate', {
-            endDate: toDate.toISOString(),
+            endDate: toDate,
           });
       }
 
