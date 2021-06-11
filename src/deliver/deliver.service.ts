@@ -82,6 +82,8 @@ export class DeliverService {
     private payinTransactionRepository: Repository<PayinTransaction>,
     @InjectRepository(WithdrawTransaction)
     private withdrawTransactionRepository: Repository<WithdrawTransaction>,
+    @InjectRepository(DeliveryHistory)
+    private deliveryHistoryRepository: Repository<DeliveryHistory>,
     @InjectRepository(AccountTransaction)
     private accountTransactionRepository: Repository<AccountTransaction>,
     @InjectConnection()
@@ -984,12 +986,17 @@ export class DeliverService {
         //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
         const moneyToDeduct =
           COMISSION_FEE_PERCENT * order.delivery.shippingFee + order.subTotal;
-        accountWallet.mainBalance -= moneyToDeduct;
+
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
-        const accountTransaction = new AccountTransaction();
-        accountTransaction.amount = moneyToDeduct;
-        accountTransaction.driver = accountWallet.driver;
-        accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
+        const accountTransaction = this.accountTransactionRepository.create({
+          amount: moneyToDeduct,
+          driver: accountWallet.driver,
+          operationType: EOperationType.SYSTEM_DEDUCT,
+          accountBalance: accountWallet.mainBalance,
+        });
+
+        accountWallet.mainBalance -= moneyToDeduct;
+
         await Promise.all([
           queryRunner.manager.save(AccountWallet, accountWallet),
           queryRunner.manager.save(AccountTransaction, accountTransaction),
@@ -998,12 +1005,17 @@ export class DeliverService {
         //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
         const moneyToDeduct =
           COMISSION_FEE_PERCENT * order.delivery.shippingFee;
-        accountWallet.mainBalance -= moneyToDeduct;
+
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
-        const accountTransaction = new AccountTransaction();
-        accountTransaction.amount = moneyToDeduct;
-        accountTransaction.driver = accountWallet.driver;
-        accountTransaction.operationType = EOperationType.SYSTEM_DEDUCT;
+        const accountTransaction = this.accountTransactionRepository.create({
+          amount: moneyToDeduct,
+          driver: accountWallet.driver,
+          operationType: EOperationType.SYSTEM_DEDUCT,
+          accountBalance: accountWallet.mainBalance,
+        });
+
+        accountWallet.mainBalance -= moneyToDeduct;
+
         await Promise.all([
           queryRunner.manager.save(AccountWallet, accountWallet),
           queryRunner.manager.save(AccountTransaction, accountTransaction),
@@ -1034,28 +1046,46 @@ export class DeliverService {
       await queryRunner.connect();
       await queryRunner.startTransaction();
       const promises: (() => Promise<any>)[] = [];
+
       //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
       if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
         const moneyToAdd = order.grandTotal;
         console.log('MoneyToAdd', moneyToAdd);
+
+        const accountWallet = await this.accountWalletRepository
+          .createQueryBuilder('accountW')
+          .leftJoinAndSelect('accountW.driver', 'driver')
+          .where('driver.id = :driverId', { driverId: order.delivery.driverId })
+          .getOne();
+
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_ADD
-        const accountTransaction = new AccountTransaction();
-        accountTransaction.amount = moneyToAdd;
-        accountTransaction.driverId = order.delivery.driverId;
-        accountTransaction.operationType = EOperationType.SYSTEM_ADD;
+        const accountTransaction = this.accountTransactionRepository.create({
+          amount: moneyToAdd,
+          driverId: order.delivery.driverId,
+          operationType: EOperationType.SYSTEM_ADD,
+          accountBalance: accountWallet.mainBalance,
+        });
         const updateAccountTransaction = () =>
           queryRunner.manager.save(AccountTransaction, accountTransaction);
+
+        accountWallet.mainBalance += moneyToAdd;
+        const updateAccountWallet = () =>
+          queryRunner.manager.save(AccountWallet, accountWallet);
+
         promises.push(updateAccountTransaction);
+        promises.push(updateAccountWallet);
       }
-      //TODO: Tạo đối tượng DeliveryHistory
-      const deliveryHistory = new DeliveryHistory();
-      deliveryHistory.driverId = order.delivery.driverId;
-      deliveryHistory.orderId = order.id;
-      deliveryHistory.deliveryId = order.delivery.id;
-      deliveryHistory.shippingFee = order.delivery.shippingFee;
-      deliveryHistory.totalDistance = order.delivery.distance;
+
+      const deliveryHistory = this.deliveryHistoryRepository.create({
+        driverId: order.delivery.driverId,
+        orderId: order.id,
+        deliveryId: order.delivery.id,
+        shippingFee: order.delivery.shippingFee,
+        totalDistance: order.delivery.distance,
+      });
       const createDeliveryHistory = () =>
         queryRunner.manager.save(DeliveryHistory, deliveryHistory);
+
       promises.push(createDeliveryHistory);
 
       await Promise.all(promises.map((callback) => callback()));
