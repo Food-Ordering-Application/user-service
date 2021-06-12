@@ -604,25 +604,22 @@ export class MerchantService {
   async updateIsAutoConfirmOrder(
     updateIsAutoConfirmOrderDto: UpdateIsAutoConfirmOrderDto,
   ): Promise<IIsAutoConfirmResponse> {
-    const { callerId, merchantId, isAutoConfirm, restaurantProfileId } =
+    const { isAutoConfirm, restaurantId, tokenRestaurantId } =
       updateIsAutoConfirmOrderDto;
 
-    //TODO: Nếu như driverId !== callerId
-    if (merchantId !== callerId) {
+    if (restaurantId !== tokenRestaurantId) {
       return {
         status: HttpStatus.FORBIDDEN,
         message: 'Forbidden',
       };
     }
+
     try {
       //TODO: Lấy thông tin restaurantProfile
       const restaurantProfile = await this.restaurantProfileRepository
         .createQueryBuilder('resProfile')
-        .where('resProfile.id = :restaurantProfileId', {
-          restaurantProfileId: restaurantProfileId,
-        })
-        .andWhere('resProfile.merchantId = :merchantId', {
-          merchantId: merchantId,
+        .where('resProfile.restaurantId = :restaurantId', {
+          restaurantId: restaurantId,
         })
         .getOne();
 
@@ -630,7 +627,7 @@ export class MerchantService {
         return {
           status: HttpStatus.NOT_FOUND,
           message:
-            'restaurantProfile not found with the associated restaurantProfileId && merchantId',
+            'restaurantProfile not found with the associated restaurantId',
         };
       }
 

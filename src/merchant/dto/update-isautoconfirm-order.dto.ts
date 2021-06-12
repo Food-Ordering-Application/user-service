@@ -1,6 +1,5 @@
 export class UpdateIsAutoConfirmOrderDto {
-  merchantId: string;
-  callerId: string;
-  restaurantProfileId: string;
+  tokenRestaurantId: string;
+  restaurantId: string;
   isAutoConfirm: string;
 }
