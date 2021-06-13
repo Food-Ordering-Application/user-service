@@ -54,7 +54,7 @@ import { ISimpleResponse } from '../customer/interfaces';
 import * as uniqid from 'uniqid';
 import { ClientProxy } from '@nestjs/microservices';
 import { NOTIFICATION_SERVICE } from '../constants';
-import momenttimezone from 'moment-timezone';
+import * as momenttimezone from 'moment-timezone';
 
 const DEFAULT_EXCHANGE_RATE = 0.00004;
 const COMISSION_FEE_PERCENT = 0.2;
@@ -220,9 +220,15 @@ export class DeliverService {
     checkDriverAccountBalanceDto: CheckDriverAccountBalanceDto,
   ): Promise<ICanDriverAcceptOrderResponse> {
     const { order, driverId } = checkDriverAccountBalanceDto;
+    let queryRunner;
     try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
       //TODO: Lấy thông tin account balance driver
-      const accountWallet = await this.accountWalletRepository
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
         .createQueryBuilder('accountW')
         .leftJoinAndSelect('accountW.driver', 'driver')
         .where('driver.id = :driverId', { driverId: driverId })
@@ -278,13 +284,19 @@ export class DeliverService {
             };
           }
       }
+      await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         canAccept: false,
       };
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -425,8 +437,18 @@ export class DeliverService {
         };
       }
 
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      //TODO: Lock
+      await queryRunner.query(
+        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      );
+
       //TODO: Lấy DriverTransaction và PayinTransaction của driver
-      const driverTransaction = await this.driverTransactionRepository
+      const driverTransaction = await queryRunner.manager
+        .getRepository(DriverTransaction)
         .createQueryBuilder('driverTransaction')
         .leftJoinAndSelect(
           'driverTransaction.payinTransaction',
@@ -457,25 +479,28 @@ export class DeliverService {
         capture.result.purchase_units[0].payments.captures[0].id;
       //TODO: Lưu lại captureId
       driverTransaction.payinTransaction.captureId = captureID;
-      // //TODO: Đổi trạng thái payinTransaction sang đang xử lý
-      // driverTransaction.payinTransaction.status =
-      //   EPayinTransactionStatus.PROCESSING;
       //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
       driverTransaction.payinTransaction.status =
         EPayinTransactionStatus.SUCCESS;
       driverTransaction.driver.wallet.mainBalance += driverTransaction.amount;
-      queryRunner = this.connection.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      await queryRunner.manager.save(
-        PayinTransaction,
-        driverTransaction.payinTransaction,
-      );
+
+      await Promise.all([
+        queryRunner.manager.save(
+          PayinTransaction,
+          driverTransaction.payinTransaction,
+        ),
+        queryRunner.manager.save(
+          AccountWallet,
+          driverTransaction.driver.wallet.mainBalance,
+        ),
+      ]);
+
       await queryRunner.commitTransaction();
+
       return {
         status: HttpStatus.OK,
         message: 'Approve deposit money into main account wallet successfully',
-        // mainBalance: driverTransaction.driver.wallet.mainBalance,
+        mainBalance: driverTransaction.driver.wallet.mainBalance,
       };
     } catch (error) {
       this.logger.error(error);
@@ -507,8 +532,14 @@ export class DeliverService {
           message: 'Forbidden',
         };
       }
+
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
       //TODO: Lấy AccountWallet của driver
-      const driver = await this.driverRepository
+      const driver = await queryRunner.manager
+        .getRepository(Driver)
         .createQueryBuilder('driver')
         .leftJoinAndSelect('driver.wallet', 'accountWallet')
         .where('driver.id = :driverId', {
@@ -576,9 +607,7 @@ export class DeliverService {
       request.requestBody(requestBody);
       try {
         const response = await payoutClient().execute(request);
-        queryRunner = this.connection.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+
         console.log(`Response: ${JSON.stringify(response)}`);
         // If call returns body in response, you can get the deserialized version from the result attribute of the response.
         console.log(
@@ -595,18 +624,17 @@ export class DeliverService {
         withdrawTransaction.senderItemId = sender_item_id;
         withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
         withdrawTransaction.driverTransaction = driverTransaction;
-        driver.wallet.mainBalance -= moneyToWithdraw;
-        await Promise.all([
-          queryRunner.manager.save(WithdrawTransaction, withdrawTransaction),
-          queryRunner.manager.save(AccountWallet, driver.wallet),
-        ]);
+
+        await queryRunner.manager.save(
+          WithdrawTransaction,
+          withdrawTransaction,
+        );
         await queryRunner.commitTransaction();
         return {
           status: HttpStatus.OK,
-          message: 'Withdraw successfully, please check your paypal account!',
+          message: 'Withdraw is processing, please check your paypal account!',
         };
       } catch (e) {
-        await queryRunner.rollbackTransaction();
         if (e.statusCode) {
           //Handle server side/API failure response
           console.log('Status code: ', e.statusCode);
@@ -623,18 +651,19 @@ export class DeliverService {
           message: 'Withdraw failed',
           reason: 'PAYPAL_BROKEN',
         };
-      } finally {
-        if (queryRunner) {
-          await queryRunner.release();
-        }
       }
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         reason: 'OUR_SYSTEM_BROKEN',
       };
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -652,10 +681,19 @@ export class DeliverService {
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      const queryBuilder = this.driverTransactionRepository
+      //TODO: Lock
+      await queryRunner.query(
+        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      );
+
+      const queryBuilder = await queryRunner.manager
+        .getRepository(DriverTransaction)
         .createQueryBuilder('driverTransaction')
+        // .useTransaction(true)
+        // .setLock('pessimistic_read')
         .leftJoinAndSelect('driverTransaction.driver', 'driver')
         .leftJoinAndSelect('driver.wallet', 'accountWallet');
+
       switch (event_type) {
         case 'PAYMENT.PAYOUTSBATCH.SUCCESS':
           console.log(
@@ -966,9 +1004,20 @@ export class DeliverService {
 
       console.dir(order, { depth: 4 });
 
-      //TODO: Lấy thông tin account balance driver
-      const accountWallet = await this.accountWalletRepository
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      //TODO: Lock
+      await queryRunner.query(
+        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      );
+
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
         .createQueryBuilder('accountW')
+        // .useTransaction(true)
+        // .setLock('pessimistic_read')
         .leftJoinAndSelect('accountW.driver', 'driver')
         .where('driver.id = :driverId', { driverId: order.delivery.driverId })
         .getOne();
@@ -977,10 +1026,6 @@ export class DeliverService {
         console.log('Account wallet not found with that driverId');
         return;
       }
-
-      queryRunner = this.connection.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
 
       if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
         //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
@@ -1045,6 +1090,11 @@ export class DeliverService {
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
+      //TODO: Lock
+      await queryRunner.query(
+        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      );
+
       const promises: (() => Promise<any>)[] = [];
 
       //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
@@ -1052,8 +1102,11 @@ export class DeliverService {
         const moneyToAdd = order.grandTotal;
         console.log('MoneyToAdd', moneyToAdd);
 
-        const accountWallet = await this.accountWalletRepository
+        const accountWallet = await queryRunner.manager
+          .getRepository(AccountWallet)
           .createQueryBuilder('accountW')
+          // .useTransaction(true)
+          // .setLock('pessimistic_read')
           .leftJoinAndSelect('accountW.driver', 'driver')
           .where('driver.id = :driverId', { driverId: order.delivery.driverId })
           .getOne();
