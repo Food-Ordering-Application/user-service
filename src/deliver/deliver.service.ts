@@ -169,7 +169,6 @@ export class DeliverService {
       driver.IDNumber = IDNumber;
       driver.city = city;
       const date = new Date(dateOfBirth);
-      console.log('Date', date);
       driver.dateOfBirth = date;
       driver.driverLicenseImageUrl = driverLicenseImageUrl;
       driver.email = email;
@@ -442,30 +441,47 @@ export class DeliverService {
       await queryRunner.startTransaction();
 
       //TODO: Lock
-      await queryRunner.query(
-        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      );
+      // await queryRunner.query(
+      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      // );
 
       //TODO: Lấy DriverTransaction và PayinTransaction của driver
-      const driverTransaction = await queryRunner.manager
-        .getRepository(DriverTransaction)
-        .createQueryBuilder('driverTransaction')
-        .leftJoinAndSelect(
-          'driverTransaction.payinTransaction',
-          'payinTransaction',
-        )
-        .where('payinTransaction.status = :payinTransactionStatus', {
-          payinTransactionStatus: EPayinTransactionStatus.PENDING_USER_ACTION,
-        })
-        .andWhere('payinTransaction.paypalOrderId = :paypalOrderId', {
-          paypalOrderId: paypalOrderId,
-        })
-        .getOne();
+      //TODO: Lấy thông tin accountWallet của driver
+      const [driverTransaction, accountWallet] = await Promise.all([
+        queryRunner.manager
+          .getRepository(DriverTransaction)
+          .createQueryBuilder('driverTransaction')
+          .leftJoinAndSelect(
+            'driverTransaction.payinTransaction',
+            'payinTransaction',
+          )
+          .where('payinTransaction.status = :payinTransactionStatus', {
+            payinTransactionStatus: EPayinTransactionStatus.PENDING_USER_ACTION,
+          })
+          .andWhere('payinTransaction.paypalOrderId = :paypalOrderId', {
+            paypalOrderId: paypalOrderId,
+          })
+          .getOne(),
+        queryRunner.manager
+          .getRepository(AccountWallet)
+          .createQueryBuilder('accountW')
+          .leftJoin('accountW.driver', 'driver')
+          .setLock('pessimistic_write')
+          .where('driver.id = :driverId', { driverId: driverId })
+          .getOne(),
+      ]);
 
       if (!driverTransaction) {
         return {
           status: HttpStatus.NOT_FOUND,
           message: 'DriverTransaction not found',
+        };
+      }
+
+      if (!accountWallet) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'AccountWallet not found',
         };
       }
 
@@ -482,17 +498,14 @@ export class DeliverService {
       //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
       driverTransaction.payinTransaction.status =
         EPayinTransactionStatus.SUCCESS;
-      driverTransaction.driver.wallet.mainBalance += driverTransaction.amount;
+      accountWallet.mainBalance += driverTransaction.amount;
 
       await Promise.all([
         queryRunner.manager.save(
           PayinTransaction,
           driverTransaction.payinTransaction,
         ),
-        queryRunner.manager.save(
-          AccountWallet,
-          driverTransaction.driver.wallet.mainBalance,
-        ),
+        queryRunner.manager.save(AccountWallet, accountWallet),
       ]);
 
       await queryRunner.commitTransaction();
@@ -682,17 +695,16 @@ export class DeliverService {
       await queryRunner.startTransaction();
 
       //TODO: Lock
-      await queryRunner.query(
-        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      );
+      // await queryRunner.query(
+      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      // );
 
-      const queryBuilder = await queryRunner.manager
+      const queryBuilder = queryRunner.manager
         .getRepository(DriverTransaction)
         .createQueryBuilder('driverTransaction')
-        // .useTransaction(true)
-        // .setLock('pessimistic_read')
-        .leftJoinAndSelect('driverTransaction.driver', 'driver')
-        .leftJoinAndSelect('driver.wallet', 'accountWallet');
+        .leftJoinAndSelect('driverTransaction.driver', 'driver');
+
+      let accountWallet, driverTransaction;
 
       switch (event_type) {
         case 'PAYMENT.PAYOUTSBATCH.SUCCESS':
@@ -701,7 +713,7 @@ export class DeliverService {
             resource.batch_header.sender_batch_header.sender_batch_id,
           );
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
-          const driverTransaction1 = await queryBuilder
+          driverTransaction = await queryBuilder
             .leftJoinAndSelect(
               'driverTransaction.withdrawTransaction',
               'withdrawTransaction',
@@ -712,35 +724,48 @@ export class DeliverService {
             })
             .getOne();
 
-          if (!driverTransaction1) {
+          if (!driverTransaction) {
             console.log('Cannot found drivertransaction');
             return;
           }
+
+          //TODO: Lấy thông tin accountWallet
+          accountWallet = await queryRunner.manager
+            .getRepository(AccountWallet)
+            .createQueryBuilder('accountW')
+            .leftJoin('accountW.driver', 'driver')
+            .setLock('pessimistic_write')
+            .where('driver.id = :driverId', {
+              driverId: driverTransaction.driver.id,
+            })
+            .getOne();
+
+          if (!accountWallet) {
+            console.log('Cannot found accountWallet');
+            return;
+          }
+
           //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
-          driverTransaction1.withdrawTransaction.status =
+          driverTransaction.withdrawTransaction.status =
             EWithdrawTransactionStatus.SUCCESS;
-          driverTransaction1.driver.wallet.mainBalance -=
-            driverTransaction1.amount;
+          accountWallet.mainBalance -= driverTransaction.amount;
 
           this.notificationServiceClient.emit('mainBalanceChange', {
-            driverId: driverTransaction1.driver.id,
-            mainBalance: driverTransaction1.driver.wallet.mainBalance,
+            driverId: driverTransaction.driver.id,
+            mainBalance: accountWallet.mainBalance,
           });
 
           await Promise.all([
             queryRunner.manager.save(
               WithdrawTransaction,
-              driverTransaction1.withdrawTransaction,
+              driverTransaction.withdrawTransaction,
             ),
-            queryRunner.manager.save(
-              AccountWallet,
-              driverTransaction1.driver.wallet,
-            ),
+            queryRunner.manager.save(AccountWallet, accountWallet),
           ]);
           break;
         case 'CHECKOUT.ORDER.COMPLETED':
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
-          const driverTransaction = await queryBuilder
+          driverTransaction = await queryBuilder
             .leftJoinAndSelect(
               'driverTransaction.payinTransaction',
               'payinTransaction',
@@ -755,21 +780,33 @@ export class DeliverService {
             return;
           }
 
+          //TODO: Lấy thông tin accountWallet
+          accountWallet = await queryRunner.manager
+            .getRepository(AccountWallet)
+            .createQueryBuilder('accountW')
+            .leftJoin('accountW.driver', 'driver')
+            .setLock('pessimistic_write')
+            .where('driver.id = :driverId', {
+              driverId: driverTransaction.driver.id,
+            })
+            .getOne();
+
+          if (!accountWallet) {
+            console.log('Cannot found accountWallet');
+            return;
+          }
+
           //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
           driverTransaction.payinTransaction.status =
             EPayinTransactionStatus.SUCCESS;
-          driverTransaction.driver.wallet.mainBalance +=
-            driverTransaction.amount;
+          accountWallet.mainBalance += driverTransaction.amount;
 
           await Promise.all([
             queryRunner.manager.save(
               PayinTransaction,
               driverTransaction.payinTransaction,
             ),
-            queryRunner.manager.save(
-              AccountWallet,
-              driverTransaction.driver.wallet,
-            ),
+            queryRunner.manager.save(AccountWallet, accountWallet),
           ]);
           break;
       }
@@ -1009,15 +1046,14 @@ export class DeliverService {
       await queryRunner.startTransaction();
 
       //TODO: Lock
-      await queryRunner.query(
-        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      );
+      // await queryRunner.query(
+      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      // );
 
       const accountWallet = await queryRunner.manager
         .getRepository(AccountWallet)
         .createQueryBuilder('accountW')
-        // .useTransaction(true)
-        // .setLock('pessimistic_read')
+        .setLock('pessimistic_write')
         .leftJoinAndSelect('accountW.driver', 'driver')
         .where('driver.id = :driverId', { driverId: order.delivery.driverId })
         .getOne();
@@ -1091,9 +1127,9 @@ export class DeliverService {
       await queryRunner.connect();
       await queryRunner.startTransaction();
       //TODO: Lock
-      await queryRunner.query(
-        'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      );
+      // await queryRunner.query(
+      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
+      // );
 
       const promises: (() => Promise<any>)[] = [];
 
@@ -1105,8 +1141,7 @@ export class DeliverService {
         const accountWallet = await queryRunner.manager
           .getRepository(AccountWallet)
           .createQueryBuilder('accountW')
-          // .useTransaction(true)
-          // .setLock('pessimistic_read')
+          .setLock('pessimistic_write')
           .leftJoinAndSelect('accountW.driver', 'driver')
           .where('driver.id = :driverId', { driverId: order.delivery.driverId })
           .getOne();
