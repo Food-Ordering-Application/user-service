@@ -18,6 +18,10 @@ export class DeliveryHistory {
   @Column()
   shippingFee: number;
   @Column()
+  commissionFee: number;
+  @Column()
+  income: number;
+  @Column()
   totalDistance: number;
   @CreateDateColumn()
   createdAt: Date;

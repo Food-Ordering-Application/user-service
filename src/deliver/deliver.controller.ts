@@ -7,6 +7,7 @@ import {
   DepositMoneyIntoMainAccountWalletDto,
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
+  GetDriverStatisticDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   OrderHasBeenAssignedToDriverEventDto,
@@ -21,6 +22,7 @@ import {
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
+  IDriverStatisticResponse,
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
   IIsActiveResponse,
@@ -161,6 +163,28 @@ export class DeliverController {
   ) {
     this.deliverService.orderHasBeenCompletedEvent(
       orderHasBeenCompletedEventDto,
+    );
+  }
+
+  //! Api thống kê theo tuần
+  @MessagePattern('getDriverWeeklyStatistic')
+  async getDriverWeeklyStatistic(
+    @Payload()
+    getDriverWeeklyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    return this.deliverService.getDriverWeeklyStatistic(
+      getDriverWeeklyStatisticDto,
+    );
+  }
+
+  //! Api thống kê theo tháng
+  @MessagePattern('getDriverMonthlyStatistic')
+  async getDriverMonthlyStatistic(
+    @Payload()
+    getDriverMonthlyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    return this.deliverService.getDriverMonthlyStatistic(
+      getDriverMonthlyStatisticDto,
     );
   }
 

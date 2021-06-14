@@ -8,6 +8,7 @@ import {
   DepositMoneyIntoMainAccountWalletDto,
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
+  GetDriverStatisticDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   OrderHasBeenAssignedToDriverEventDto,
@@ -38,8 +39,10 @@ import {
 import {
   IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
+  IDayStatisticData,
   IDepositMoneyIntoMainAccountWalletResponse,
   IDriverResponse,
+  IDriverStatisticResponse,
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
   IIsActiveResponse,
@@ -55,9 +58,10 @@ import * as uniqid from 'uniqid';
 import { ClientProxy } from '@nestjs/microservices';
 import { NOTIFICATION_SERVICE } from '../constants';
 import * as momenttimezone from 'moment-timezone';
+import * as moment from 'moment';
 
 const DEFAULT_EXCHANGE_RATE = 0.00004;
-const COMISSION_FEE_PERCENT = 0.2;
+const COMMISSION_FEE_PERCENT = 0.2;
 const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
 const MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW = 300000;
 
@@ -240,7 +244,7 @@ export class DeliverService {
           if (
             Math.abs(
               accountWallet.mainBalance -
-                COMISSION_FEE_PERCENT * order.delivery.shippingFee,
+                COMMISSION_FEE_PERCENT * order.delivery.shippingFee,
             ) >
             DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
           ) {
@@ -264,7 +268,7 @@ export class DeliverService {
           if (
             Math.abs(
               accountWallet.mainBalance -
-                COMISSION_FEE_PERCENT * order.delivery.shippingFee -
+                COMMISSION_FEE_PERCENT * order.delivery.shippingFee -
                 order.subTotal,
             ) >
             DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
@@ -1066,7 +1070,7 @@ export class DeliverService {
       if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
         //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
         const moneyToDeduct =
-          COMISSION_FEE_PERCENT * order.delivery.shippingFee + order.subTotal;
+          COMMISSION_FEE_PERCENT * order.delivery.shippingFee + order.subTotal;
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
         const accountTransaction = this.accountTransactionRepository.create({
@@ -1085,7 +1089,7 @@ export class DeliverService {
       } else if (order.invoice.payment.method === EPaymentMethod.COD) {
         //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
         const moneyToDeduct =
-          COMISSION_FEE_PERCENT * order.delivery.shippingFee;
+          COMMISSION_FEE_PERCENT * order.delivery.shippingFee;
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
         const accountTransaction = this.accountTransactionRepository.create({
@@ -1170,6 +1174,8 @@ export class DeliverService {
         deliveryId: order.delivery.id,
         shippingFee: order.delivery.shippingFee,
         totalDistance: order.delivery.distance,
+        commissionFee: order.delivery.shippingFee * COMMISSION_FEE_PERCENT,
+        income: order.delivery.shippingFee * (1 - COMMISSION_FEE_PERCENT),
       });
       const createDeliveryHistory = () =>
         queryRunner.manager.save(DeliveryHistory, deliveryHistory);
@@ -1185,6 +1191,176 @@ export class DeliverService {
       if (queryRunner) {
         await queryRunner.release();
       }
+    }
+  }
+
+  //! Api thống kê theo tuần
+  async getDriverWeeklyStatistic(
+    getDriverWeeklyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    const { callerId, driverId } = getDriverWeeklyStatisticDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy ngày giờ UTC đầu tuần, cuối tuần
+      const startOfWeekUTC = moment().startOf('isoWeek').utc().toISOString();
+      const endOfWeekUTC = moment().endOf('isoWeek').utc().toISOString();
+      //TODO: Lấy thông tin deliveryHistory của driver trong tuần này
+      const deliveryHistories = await this.deliveryHistoryRepository
+        .createQueryBuilder('deliveryH')
+        .where('deliveryH.createdAt >= :startOfWeekUTC', {
+          startOfWeekUTC: startOfWeekUTC,
+        })
+        .andWhere('deliveryH.createdAt <= :endOfWeekUTC', {
+          endOfWeekUTC: endOfWeekUTC,
+        })
+        .getMany();
+
+      if (!deliveryHistories || deliveryHistories.length === 0) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Cannot found any statistic about this week',
+        };
+      }
+
+      const date = moment().startOf('isoWeek');
+
+      const statistic: IDayStatisticData[] = [];
+
+      for (let i = 1; i <= 7; i++) {
+        const start = date
+          .add(i - 1, 'day')
+          .utc()
+          .valueOf();
+        const end = date.add(i, 'day').utc().valueOf();
+
+        const filteredDeliveryHistories = deliveryHistories.filter(
+          (deliveryHistory) => {
+            return (
+              deliveryHistory.createdAt.getTime() > start &&
+              deliveryHistory.createdAt.getTime() < end
+            );
+          },
+        );
+
+        let dayStatisticData: IDayStatisticData;
+        dayStatisticData.income = 0;
+        dayStatisticData.commission = 0;
+        dayStatisticData.numOrderFinished = 0;
+
+        for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+          dayStatisticData.income += filteredDeliveryHistories[i].income;
+          dayStatisticData.commission +=
+            filteredDeliveryHistories[i].commissionFee;
+          dayStatisticData.numOrderFinished += 1;
+        }
+
+        statistic.push(dayStatisticData);
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Calculate weekly statistic successfully',
+        statistic: statistic,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Api thống kê theo tháng
+  async getDriverMonthlyStatistic(
+    getDriverMonthlyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    const { callerId, driverId } = getDriverMonthlyStatisticDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
+      const startOfMonthUTC = moment().startOf('month').utc().toISOString();
+      const endOfMonthUTC = moment().endOf('month').utc().toISOString();
+      //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
+      const deliveryHistories = await this.deliveryHistoryRepository
+        .createQueryBuilder('deliveryH')
+        .where('deliveryH.createdAt >= :startOfMonthUTC', {
+          startOfMonthUTC: startOfMonthUTC,
+        })
+        .andWhere('deliveryH.createdAt <= :endOfMonthUTC', {
+          endOfMonthUTC: endOfMonthUTC,
+        })
+        .getMany();
+
+      if (!deliveryHistories || deliveryHistories.length === 0) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Cannot found any statistic about this month',
+        };
+      }
+
+      const date = moment().startOf('month');
+
+      const statistic: IDayStatisticData[] = [];
+
+      const daysInMonth = moment().daysInMonth();
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const start = date
+          .add(i - 1, 'day')
+          .utc()
+          .valueOf();
+        const end = date.add(i, 'day').utc().valueOf();
+
+        const filteredDeliveryHistories = deliveryHistories.filter(
+          (deliveryHistory) => {
+            return (
+              deliveryHistory.createdAt.getTime() > start &&
+              deliveryHistory.createdAt.getTime() < end
+            );
+          },
+        );
+
+        let dayStatisticData: IDayStatisticData;
+        dayStatisticData.income = 0;
+        dayStatisticData.commission = 0;
+        dayStatisticData.numOrderFinished = 0;
+
+        for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+          dayStatisticData.income += filteredDeliveryHistories[i].income;
+          dayStatisticData.commission +=
+            filteredDeliveryHistories[i].commissionFee;
+          dayStatisticData.numOrderFinished += 1;
+        }
+
+        statistic.push(dayStatisticData);
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Calculate monthly statistic successfully',
+        statistic: statistic,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
     }
   }
 
