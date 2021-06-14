@@ -163,4 +163,23 @@ export class DeliverController {
       orderHasBeenCompletedEventDto,
     );
   }
+
+  //! Test locking route 1
+  @MessagePattern('testUpdateAccountWallet')
+  async testUpdateAccountWallet(
+    @Payload()
+    testUpdateAccountWalletDto,
+  ) {
+    return this.deliverService.testUpdateAccountWallet(
+      testUpdateAccountWalletDto,
+    );
+  }
+  //! Test locking route 2
+  @MessagePattern('testGetAccountWallet')
+  async testGetAccountWallet(
+    @Payload()
+    testGetAccountWalletDto,
+  ) {
+    return this.deliverService.testGetAccountWallet(testGetAccountWalletDto);
+  }
 }

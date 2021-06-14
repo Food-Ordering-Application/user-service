@@ -1187,4 +1187,116 @@ export class DeliverService {
       }
     }
   }
+
+  //! Test locking route 1
+  async testUpdateAccountWallet(testUpdateAccountWalletDto) {
+    const { callerId, driverId } = testUpdateAccountWalletDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+
+    let queryRunner;
+    try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      //TODO: Lấy thông tin accountWallet
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
+        .createQueryBuilder('accountW')
+        .leftJoin('accountW.driver', 'driver')
+        .setLock('pessimistic_write')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      if (!accountWallet) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Account wallet not found with the associated driverId',
+        };
+      }
+      accountWallet.mainBalance += 5;
+      await queryRunner.manager.save(AccountWallet, accountWallet);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        accountWallet: accountWallet,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+    // finally {
+    //   if (queryRunner) {
+    //     await queryRunner.release();
+    //   }
+    // }
+  }
+
+  //! Test locking route 2
+  async testGetAccountWallet(testGetAccountWalletDto) {
+    const { callerId, driverId } = testGetAccountWalletDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    let queryRunner;
+    try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      console.log('Getting ACCOUNTWALLET');
+      //TODO: Lấy thông tin accountWallet
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
+        .createQueryBuilder('accountW')
+        .leftJoin('accountW.driver', 'driver')
+        .setLock('pessimistic_write')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      console.log('Get success');
+
+      if (!accountWallet) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Account wallet not found with the associated driverId',
+        };
+      }
+
+      accountWallet.mainBalance -= 1;
+      await queryRunner.manager.save(AccountWallet, accountWallet);
+      await queryRunner.commitTransaction();
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        accountWallet: accountWallet,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
+    }
+  }
 }
