@@ -46,6 +46,7 @@
     "crypto-random-string": "^4.0.0",
     "googleapis": "^74.0.0",
     "joi": "^17.4.0",
+    "moment": "^2.29.1",
     "moment-timezone": "^0.5.33",
     "nodemailer": "^6.6.0",
     "pg": "^8.5.1",

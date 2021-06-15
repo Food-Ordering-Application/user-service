@@ -29,6 +29,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             rejectUnauthorized: false,
           },
         },
+        // logging: true,
       }),
     }),
   ],

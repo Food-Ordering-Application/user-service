@@ -1,5 +1,9 @@
-import { IOrder } from '../interfaces';
-
 export class OrderHasBeenCompletedEventDto {
-  order: IOrder;
+  paymentMethod: string;
+  orderGrandTotal: number;
+  driverId: string;
+  orderId: string;
+  deliveryId: string;
+  shippingFee: number;
+  deliveryDistance: number;
 }

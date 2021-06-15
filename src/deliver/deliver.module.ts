@@ -14,7 +14,11 @@ import {
 } from './entities';
 import { PaymentInfo, PayPalPayment } from '../merchant/entities';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { NOTIFICATION_SERVICE } from '../constants';
+import {
+  NOTIFICATION_SERVICE,
+  ORDER_SERVICE,
+  USER_SERVICE,
+} from '../constants';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
@@ -41,6 +45,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           options: {
             urls: [configService.get('AMQP_URL') as string],
             queue: configService.get('NOTIFICATION_AMQP_QUEUE'),
+            queueOptions: {
+              durable: false,
+            },
+          },
+        }),
+      },
+      {
+        name: ORDER_SERVICE,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get('AMQP_URL') as string],
+            queue: configService.get('ORDER_AMQP_QUEUE'),
             queueOptions: {
               durable: false,
             },

@@ -1,5 +1,8 @@
 import { IOrder } from '../interfaces';
 
 export class OrderHasBeenAssignedToDriverEventDto {
-  order: IOrder;
+  driverId: string;
+  paymentMethod: string;
+  shippingFee: number;
+  orderSubtotal: number;
 }

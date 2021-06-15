@@ -19,3 +19,6 @@ export { IDriverTransactionsResponse } from './driver-transactions-response.inte
 export { IAccountWalletResponse } from './account-wallet-response.interface';
 export { IIsActiveResponse } from './isActive-response.interface';
 export { IMainBalanceResponse } from './main-balance-response.interface';
+export { IDayStatisticData } from './day-statistic-data.interface';
+export { IDriverStatisticResponse } from './driver-statistic-response.interface';
+export { IDriverDailyStatisticResponse } from './driver-daily-statistic-response.interface';

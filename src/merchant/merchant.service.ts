@@ -16,7 +16,7 @@ import {
   CreateMerchantDto,
   FetchPaymentDto,
   FetchRestaurantProfilesDto,
-  GetIsAutoConfirmDto,
+  GetIsAutoConfirmOrderDto,
   GetPayPalOnboardStatusDto,
   GetPayPalSignUpLinkDto,
   MerchantDto,
@@ -653,10 +653,10 @@ export class MerchantService {
   }
 
   //! Lấy thông tin isAutoConfirm của merchant
-  async getIsAutoConfirm(
-    getIsAutoConfirmDto: GetIsAutoConfirmDto,
+  async getIsAutoConfirmOrder(
+    getIsAutoConfirmOrderDto: GetIsAutoConfirmOrderDto,
   ): Promise<IIsAutoConfirmResponse> {
-    const { restaurantId } = getIsAutoConfirmDto;
+    const { restaurantId } = getIsAutoConfirmOrderDto;
 
     try {
       //TODO: Lấy thông tin restaurantProfile

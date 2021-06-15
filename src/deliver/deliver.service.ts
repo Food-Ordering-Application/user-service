@@ -8,6 +8,7 @@ import {
   DepositMoneyIntoMainAccountWalletDto,
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
+  GetDriverStatisticDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   OrderHasBeenAssignedToDriverEventDto,
@@ -38,8 +39,11 @@ import {
 import {
   IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
+  IDayStatisticData,
   IDepositMoneyIntoMainAccountWalletResponse,
+  IDriverDailyStatisticResponse,
   IDriverResponse,
+  IDriverStatisticResponse,
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
   IIsActiveResponse,
@@ -54,10 +58,11 @@ import { ISimpleResponse } from '../customer/interfaces';
 import * as uniqid from 'uniqid';
 import { ClientProxy } from '@nestjs/microservices';
 import { NOTIFICATION_SERVICE } from '../constants';
-import momenttimezone from 'moment-timezone';
+import * as momenttimezone from 'moment-timezone';
+import * as moment from 'moment';
 
 const DEFAULT_EXCHANGE_RATE = 0.00004;
-const COMISSION_FEE_PERCENT = 0.2;
+const COMMISSION_FEE_PERCENT = 0.2;
 const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
 const MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW = 300000;
 
@@ -169,7 +174,6 @@ export class DeliverService {
       driver.IDNumber = IDNumber;
       driver.city = city;
       const date = new Date(dateOfBirth);
-      console.log('Date', date);
       driver.dateOfBirth = date;
       driver.driverLicenseImageUrl = driverLicenseImageUrl;
       driver.email = email;
@@ -220,9 +224,15 @@ export class DeliverService {
     checkDriverAccountBalanceDto: CheckDriverAccountBalanceDto,
   ): Promise<ICanDriverAcceptOrderResponse> {
     const { order, driverId } = checkDriverAccountBalanceDto;
+    let queryRunner;
     try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
       //TODO: Lấy thông tin account balance driver
-      const accountWallet = await this.accountWalletRepository
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
         .createQueryBuilder('accountW')
         .leftJoinAndSelect('accountW.driver', 'driver')
         .where('driver.id = :driverId', { driverId: driverId })
@@ -235,7 +245,7 @@ export class DeliverService {
           if (
             Math.abs(
               accountWallet.mainBalance -
-                COMISSION_FEE_PERCENT * order.delivery.shippingFee,
+                COMMISSION_FEE_PERCENT * order.delivery.shippingFee,
             ) >
             DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
           ) {
@@ -259,7 +269,7 @@ export class DeliverService {
           if (
             Math.abs(
               accountWallet.mainBalance -
-                COMISSION_FEE_PERCENT * order.delivery.shippingFee -
+                COMMISSION_FEE_PERCENT * order.delivery.shippingFee -
                 order.subTotal,
             ) >
             DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
@@ -278,13 +288,19 @@ export class DeliverService {
             };
           }
       }
+      await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         canAccept: false,
       };
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -425,25 +441,47 @@ export class DeliverService {
         };
       }
 
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      console.log('START TRANSACTION');
       //TODO: Lấy DriverTransaction và PayinTransaction của driver
-      const driverTransaction = await this.driverTransactionRepository
-        .createQueryBuilder('driverTransaction')
-        .leftJoinAndSelect(
-          'driverTransaction.payinTransaction',
-          'payinTransaction',
-        )
-        .where('payinTransaction.status = :payinTransactionStatus', {
-          payinTransactionStatus: EPayinTransactionStatus.PENDING_USER_ACTION,
-        })
-        .andWhere('payinTransaction.paypalOrderId = :paypalOrderId', {
-          paypalOrderId: paypalOrderId,
-        })
-        .getOne();
+      //TODO: Lấy thông tin accountWallet của driver
+      const [driverTransaction, accountWallet] = await Promise.all([
+        queryRunner.manager
+          .getRepository(DriverTransaction)
+          .createQueryBuilder('driverTransaction')
+          .leftJoinAndSelect(
+            'driverTransaction.payinTransaction',
+            'payinTransaction',
+          )
+          .where('payinTransaction.status = :payinTransactionStatus', {
+            payinTransactionStatus: EPayinTransactionStatus.PENDING_USER_ACTION,
+          })
+          .andWhere('payinTransaction.paypalOrderId = :paypalOrderId', {
+            paypalOrderId: paypalOrderId,
+          })
+          .getOne(),
+        queryRunner.manager
+          .getRepository(AccountWallet)
+          .createQueryBuilder('accountW')
+          .leftJoin('accountW.driver', 'driver')
+          .setLock('pessimistic_write')
+          .where('driver.id = :driverId', { driverId: driverId })
+          .getOne(),
+      ]);
 
       if (!driverTransaction) {
         return {
           status: HttpStatus.NOT_FOUND,
           message: 'DriverTransaction not found',
+        };
+      }
+
+      if (!accountWallet) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'AccountWallet not found',
         };
       }
 
@@ -457,25 +495,25 @@ export class DeliverService {
         capture.result.purchase_units[0].payments.captures[0].id;
       //TODO: Lưu lại captureId
       driverTransaction.payinTransaction.captureId = captureID;
-      // //TODO: Đổi trạng thái payinTransaction sang đang xử lý
-      // driverTransaction.payinTransaction.status =
-      //   EPayinTransactionStatus.PROCESSING;
       //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
       driverTransaction.payinTransaction.status =
         EPayinTransactionStatus.SUCCESS;
-      driverTransaction.driver.wallet.mainBalance += driverTransaction.amount;
-      queryRunner = this.connection.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      await queryRunner.manager.save(
-        PayinTransaction,
-        driverTransaction.payinTransaction,
-      );
+      accountWallet.mainBalance += driverTransaction.amount;
+
+      await Promise.all([
+        queryRunner.manager.save(
+          PayinTransaction,
+          driverTransaction.payinTransaction,
+        ),
+        queryRunner.manager.save(AccountWallet, accountWallet),
+      ]);
+      console.log('BEFORE COMMIT TRANSACTION');
       await queryRunner.commitTransaction();
+      console.log('AFTER COMMIT TRANSACTION');
       return {
         status: HttpStatus.OK,
         message: 'Approve deposit money into main account wallet successfully',
-        // mainBalance: driverTransaction.driver.wallet.mainBalance,
+        mainBalance: accountWallet.mainBalance,
       };
     } catch (error) {
       this.logger.error(error);
@@ -507,8 +545,14 @@ export class DeliverService {
           message: 'Forbidden',
         };
       }
+
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
       //TODO: Lấy AccountWallet của driver
-      const driver = await this.driverRepository
+      const driver = await queryRunner.manager
+        .getRepository(Driver)
         .createQueryBuilder('driver')
         .leftJoinAndSelect('driver.wallet', 'accountWallet')
         .where('driver.id = :driverId', {
@@ -576,9 +620,7 @@ export class DeliverService {
       request.requestBody(requestBody);
       try {
         const response = await payoutClient().execute(request);
-        queryRunner = this.connection.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+
         console.log(`Response: ${JSON.stringify(response)}`);
         // If call returns body in response, you can get the deserialized version from the result attribute of the response.
         console.log(
@@ -595,18 +637,17 @@ export class DeliverService {
         withdrawTransaction.senderItemId = sender_item_id;
         withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
         withdrawTransaction.driverTransaction = driverTransaction;
-        driver.wallet.mainBalance -= moneyToWithdraw;
-        await Promise.all([
-          queryRunner.manager.save(WithdrawTransaction, withdrawTransaction),
-          queryRunner.manager.save(AccountWallet, driver.wallet),
-        ]);
+
+        await queryRunner.manager.save(
+          WithdrawTransaction,
+          withdrawTransaction,
+        );
         await queryRunner.commitTransaction();
         return {
           status: HttpStatus.OK,
-          message: 'Withdraw successfully, please check your paypal account!',
+          message: 'Withdraw is processing, please check your paypal account!',
         };
       } catch (e) {
-        await queryRunner.rollbackTransaction();
         if (e.statusCode) {
           //Handle server side/API failure response
           console.log('Status code: ', e.statusCode);
@@ -623,18 +664,19 @@ export class DeliverService {
           message: 'Withdraw failed',
           reason: 'PAYPAL_BROKEN',
         };
-      } finally {
-        if (queryRunner) {
-          await queryRunner.release();
-        }
       }
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         reason: 'OUR_SYSTEM_BROKEN',
       };
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -652,10 +694,13 @@ export class DeliverService {
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      const queryBuilder = this.driverTransactionRepository
+      const queryBuilder = queryRunner.manager
+        .getRepository(DriverTransaction)
         .createQueryBuilder('driverTransaction')
-        .leftJoinAndSelect('driverTransaction.driver', 'driver')
-        .leftJoinAndSelect('driver.wallet', 'accountWallet');
+        .leftJoinAndSelect('driverTransaction.driver', 'driver');
+
+      let accountWallet, driverTransaction;
+
       switch (event_type) {
         case 'PAYMENT.PAYOUTSBATCH.SUCCESS':
           console.log(
@@ -663,7 +708,7 @@ export class DeliverService {
             resource.batch_header.sender_batch_header.sender_batch_id,
           );
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
-          const driverTransaction1 = await queryBuilder
+          driverTransaction = await queryBuilder
             .leftJoinAndSelect(
               'driverTransaction.withdrawTransaction',
               'withdrawTransaction',
@@ -674,35 +719,50 @@ export class DeliverService {
             })
             .getOne();
 
-          if (!driverTransaction1) {
+          if (!driverTransaction) {
             console.log('Cannot found drivertransaction');
             return;
           }
-          //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
-          driverTransaction1.withdrawTransaction.status =
-            EWithdrawTransactionStatus.SUCCESS;
-          driverTransaction1.driver.wallet.mainBalance -=
-            driverTransaction1.amount;
 
+          //TODO: Lấy thông tin accountWallet
+          accountWallet = await queryRunner.manager
+            .getRepository(AccountWallet)
+            .createQueryBuilder('accountW')
+            .leftJoin('accountW.driver', 'driver')
+            .setLock('pessimistic_write')
+            .where('driver.id = :driverId', {
+              driverId: driverTransaction.driver.id,
+            })
+            .getOne();
+
+          if (!accountWallet) {
+            console.log('Cannot found accountWallet');
+            return;
+          }
+
+          //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
+          driverTransaction.withdrawTransaction.status =
+            EWithdrawTransactionStatus.SUCCESS;
+          console.log('ACCOUNTW BEFORE', accountWallet.mainBalance);
+          accountWallet.mainBalance -= driverTransaction.amount;
+          console.log('ACCOUNTW AFTER', accountWallet.mainBalance);
           this.notificationServiceClient.emit('mainBalanceChange', {
-            driverId: driverTransaction1.driver.id,
-            mainBalance: driverTransaction1.driver.wallet.mainBalance,
+            driverId: driverTransaction.driver.id,
+            mainBalance: accountWallet.mainBalance,
           });
+          console.log('SENT NOTIFICATION');
 
           await Promise.all([
             queryRunner.manager.save(
               WithdrawTransaction,
-              driverTransaction1.withdrawTransaction,
+              driverTransaction.withdrawTransaction,
             ),
-            queryRunner.manager.save(
-              AccountWallet,
-              driverTransaction1.driver.wallet,
-            ),
+            queryRunner.manager.save(AccountWallet, accountWallet),
           ]);
           break;
         case 'CHECKOUT.ORDER.COMPLETED':
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
-          const driverTransaction = await queryBuilder
+          driverTransaction = await queryBuilder
             .leftJoinAndSelect(
               'driverTransaction.payinTransaction',
               'payinTransaction',
@@ -717,21 +777,33 @@ export class DeliverService {
             return;
           }
 
+          //TODO: Lấy thông tin accountWallet
+          accountWallet = await queryRunner.manager
+            .getRepository(AccountWallet)
+            .createQueryBuilder('accountW')
+            .leftJoin('accountW.driver', 'driver')
+            .setLock('pessimistic_write')
+            .where('driver.id = :driverId', {
+              driverId: driverTransaction.driver.id,
+            })
+            .getOne();
+
+          if (!accountWallet) {
+            console.log('Cannot found accountWallet');
+            return;
+          }
+
           //TODO: Update lại trạng thái PayinTransaction và update tiền của driver
           driverTransaction.payinTransaction.status =
             EPayinTransactionStatus.SUCCESS;
-          driverTransaction.driver.wallet.mainBalance +=
-            driverTransaction.amount;
+          accountWallet.mainBalance += driverTransaction.amount;
 
           await Promise.all([
             queryRunner.manager.save(
               PayinTransaction,
               driverTransaction.payinTransaction,
             ),
-            queryRunner.manager.save(
-              AccountWallet,
-              driverTransaction.driver.wallet,
-            ),
+            queryRunner.manager.save(AccountWallet, accountWallet),
           ]);
           break;
       }
@@ -850,7 +922,9 @@ export class DeliverService {
         }
       }
 
-      const driverTransactions = await driverTransactionQueryBuilder.getMany();
+      const driverTransactions = await driverTransactionQueryBuilder
+        .orderBy('driverTransaction.createdAt', 'DESC')
+        .getMany();
 
       return {
         status: HttpStatus.OK,
@@ -962,15 +1036,24 @@ export class DeliverService {
   ) {
     let queryRunner;
     try {
-      const { order } = orderHasBeenAssignedToDriverEventDto;
+      const { paymentMethod, driverId, orderSubtotal, shippingFee } =
+        orderHasBeenAssignedToDriverEventDto;
 
-      console.dir(order, { depth: 4 });
+      console.log('paymentMethod', paymentMethod);
+      console.log('driverId', driverId);
+      console.log('orderSubtotal', orderSubtotal);
+      console.log('shippingFee', shippingFee);
 
-      //TODO: Lấy thông tin account balance driver
-      const accountWallet = await this.accountWalletRepository
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
         .createQueryBuilder('accountW')
+        .setLock('pessimistic_write')
         .leftJoinAndSelect('accountW.driver', 'driver')
-        .where('driver.id = :driverId', { driverId: order.delivery.driverId })
+        .where('driver.id = :driverId', { driverId: driverId })
         .getOne();
 
       if (!accountWallet) {
@@ -978,14 +1061,10 @@ export class DeliverService {
         return;
       }
 
-      queryRunner = this.connection.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-
-      if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
+      if (paymentMethod === EPaymentMethod.PAYPAL) {
         //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
         const moneyToDeduct =
-          COMISSION_FEE_PERCENT * order.delivery.shippingFee + order.subTotal;
+          COMMISSION_FEE_PERCENT * shippingFee + orderSubtotal;
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
         const accountTransaction = this.accountTransactionRepository.create({
@@ -1001,10 +1080,9 @@ export class DeliverService {
           queryRunner.manager.save(AccountWallet, accountWallet),
           queryRunner.manager.save(AccountTransaction, accountTransaction),
         ]);
-      } else if (order.invoice.payment.method === EPaymentMethod.COD) {
+      } else if (paymentMethod === EPaymentMethod.COD) {
         //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
-        const moneyToDeduct =
-          COMISSION_FEE_PERCENT * order.delivery.shippingFee;
+        const moneyToDeduct = COMMISSION_FEE_PERCENT * shippingFee;
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
         const accountTransaction = this.accountTransactionRepository.create({
@@ -1038,30 +1116,41 @@ export class DeliverService {
   ) {
     let queryRunner;
     try {
-      const { order } = orderHasBeenCompletedEventDto;
+      const {
+        deliveryDistance,
+        deliveryId,
+        driverId,
+        orderGrandTotal,
+        orderId,
+        paymentMethod,
+        shippingFee,
+      } = orderHasBeenCompletedEventDto;
 
-      console.dir(order, { depth: 4 });
+      // console.dir(order, { depth: 4 });
 
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
+
       const promises: (() => Promise<any>)[] = [];
 
       //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
-      if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
-        const moneyToAdd = order.grandTotal;
+      if (paymentMethod === EPaymentMethod.PAYPAL) {
+        const moneyToAdd = orderGrandTotal;
         console.log('MoneyToAdd', moneyToAdd);
 
-        const accountWallet = await this.accountWalletRepository
+        const accountWallet = await queryRunner.manager
+          .getRepository(AccountWallet)
           .createQueryBuilder('accountW')
+          .setLock('pessimistic_write')
           .leftJoinAndSelect('accountW.driver', 'driver')
-          .where('driver.id = :driverId', { driverId: order.delivery.driverId })
+          .where('driver.id = :driverId', { driverId: driverId })
           .getOne();
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_ADD
         const accountTransaction = this.accountTransactionRepository.create({
           amount: moneyToAdd,
-          driverId: order.delivery.driverId,
+          driverId: driverId,
           operationType: EOperationType.SYSTEM_ADD,
           accountBalance: accountWallet.mainBalance,
         });
@@ -1077,11 +1166,13 @@ export class DeliverService {
       }
 
       const deliveryHistory = this.deliveryHistoryRepository.create({
-        driverId: order.delivery.driverId,
-        orderId: order.id,
-        deliveryId: order.delivery.id,
-        shippingFee: order.delivery.shippingFee,
-        totalDistance: order.delivery.distance,
+        driverId: driverId,
+        orderId: orderId,
+        deliveryId: deliveryId,
+        shippingFee: shippingFee,
+        totalDistance: deliveryDistance,
+        commissionFee: shippingFee * COMMISSION_FEE_PERCENT,
+        income: shippingFee * (1 - COMMISSION_FEE_PERCENT),
       });
       const createDeliveryHistory = () =>
         queryRunner.manager.save(DeliveryHistory, deliveryHistory);
@@ -1093,6 +1184,439 @@ export class DeliverService {
     } catch (error) {
       this.logger.error(error);
       await queryRunner.rollbackTransaction();
+    } finally {
+      if (queryRunner) {
+        await queryRunner.release();
+      }
+    }
+  }
+
+  //! Api thống kê theo ngày
+  async getDriverDailyStatistic(
+    getDriverDailyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverDailyStatisticResponse> {
+    const { callerId, driverId } = getDriverDailyStatisticDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
+      const startOfDayUTC = moment()
+        .startOf('day')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      const endOfDayUTC = moment()
+        .endOf('day')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      console.log('');
+      //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
+      const deliveryHistories = await this.deliveryHistoryRepository
+        .createQueryBuilder('deliveryH')
+        .where('deliveryH.createdAt >= :startOfDayUTC', {
+          startOfDayUTC: startOfDayUTC,
+        })
+        .andWhere('deliveryH.createdAt <= :endOfDayUTC', {
+          endOfDayUTC: endOfDayUTC,
+        })
+        .getMany();
+
+      if (!deliveryHistories || deliveryHistories.length === 0) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Cannot found any statistic about this month',
+        };
+      }
+
+      let dayStatisticData: IDayStatisticData;
+      dayStatisticData.income = 0;
+      dayStatisticData.commission = 0;
+      dayStatisticData.numOrderFinished = 0;
+
+      for (let i = 0; i < deliveryHistories.length; i++) {
+        dayStatisticData.income += deliveryHistories[i].income;
+        dayStatisticData.commission += deliveryHistories[i].commissionFee;
+        dayStatisticData.numOrderFinished += 1;
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Calculate daily statistic successfully',
+        statistic: dayStatisticData,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Api thống kê theo tuần
+  async getDriverWeeklyStatistic(
+    getDriverWeeklyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    const { callerId, driverId } = getDriverWeeklyStatisticDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy ngày giờ UTC đầu tuần, cuối tuần
+      const startOfWeekUTC = moment()
+        .startOf('isoWeek')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      const endOfWeekUTC = moment()
+        .endOf('isoWeek')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      console.log('startOfWeekUTC', startOfWeekUTC);
+      console.log('endOfWeekUTC', endOfWeekUTC);
+      //TODO: Lấy thông tin deliveryHistory của driver trong tuần này
+      const deliveryHistories = await this.deliveryHistoryRepository
+        .createQueryBuilder('deliveryH')
+        .where('deliveryH.createdAt >= :startOfWeekUTC', {
+          startOfWeekUTC: startOfWeekUTC,
+        })
+        .andWhere('deliveryH.createdAt <= :endOfWeekUTC', {
+          endOfWeekUTC: endOfWeekUTC,
+        })
+        .getMany();
+
+      if (!deliveryHistories || deliveryHistories.length === 0) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Cannot found any statistic about this week',
+        };
+      }
+
+      const statistic: IDayStatisticData[] = [];
+
+      for (let i = 1; i <= 7; i++) {
+        const start = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
+          .add(i - 1, 'day')
+          .utc()
+          .valueOf();
+        const end = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
+          .add(i, 'day')
+          .utc()
+          .valueOf();
+
+        console.log(
+          'DAUTUAN',
+          moment().startOf('isoWeek').subtract(7, 'hour').utc().toISOString(),
+        );
+
+        const filteredDeliveryHistories = deliveryHistories.filter(
+          (deliveryHistory) => {
+            console.log(
+              'DeliveryHistoryCreatedAtStart',
+              deliveryHistory.createdAt,
+            );
+            console.log(
+              'DeliveryHistoryCreatedAtStart',
+              deliveryHistory.createdAt.getTime(),
+            );
+            console.log(
+              'Start',
+              moment()
+                .startOf('isoWeek')
+                .subtract(7, 'hour')
+                .add(i - 1, 'day')
+                .utc()
+                .toISOString(),
+            );
+            console.log('StartTime', start);
+            console.log(
+              'end',
+              moment()
+                .startOf('isoWeek')
+                .subtract(7, 'hour')
+                .add(i, 'day')
+                .utc()
+                .toISOString(),
+            );
+            console.log('endTime', end);
+
+            console.log(
+              'createdAt.getTime() > start',
+              deliveryHistory.createdAt.getTime() > start,
+            );
+            console.log(
+              'createdAt.getTime() < end',
+              deliveryHistory.createdAt.getTime() < end,
+            );
+            return (
+              deliveryHistory.createdAt.getTime() > start &&
+              deliveryHistory.createdAt.getTime() < end
+            );
+          },
+        );
+
+        console.log('FilteredDeliveryHistories', filteredDeliveryHistories);
+
+        let dayStatisticData: IDayStatisticData;
+        dayStatisticData.income = 0;
+        dayStatisticData.commission = 0;
+        dayStatisticData.numOrderFinished = 0;
+
+        if (
+          filteredDeliveryHistories &&
+          filteredDeliveryHistories.length !== 0
+        ) {
+          for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+            console.log('FILTERED ROW', filteredDeliveryHistories[i]);
+            dayStatisticData.income += filteredDeliveryHistories[i].income;
+            dayStatisticData.commission +=
+              filteredDeliveryHistories[i].commissionFee;
+            dayStatisticData.numOrderFinished += 1;
+          }
+        }
+        console.log('Trig build');
+        statistic.push(dayStatisticData);
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Calculate weekly statistic successfully',
+        statistic: statistic,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Api thống kê theo tháng
+  async getDriverMonthlyStatistic(
+    getDriverMonthlyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    const { callerId, driverId } = getDriverMonthlyStatisticDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
+      const startOfMonthUTC = moment()
+        .startOf('month')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      const endOfMonthUTC = moment()
+        .endOf('month')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
+      const deliveryHistories = await this.deliveryHistoryRepository
+        .createQueryBuilder('deliveryH')
+        .where('deliveryH.createdAt >= :startOfMonthUTC', {
+          startOfMonthUTC: startOfMonthUTC,
+        })
+        .andWhere('deliveryH.createdAt <= :endOfMonthUTC', {
+          endOfMonthUTC: endOfMonthUTC,
+        })
+        .getMany();
+
+      if (!deliveryHistories || deliveryHistories.length === 0) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Cannot found any statistic about this month',
+        };
+      }
+
+      const statistic: IDayStatisticData[] = [];
+
+      const daysInMonth = moment().daysInMonth();
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const start = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
+          .add(i - 1, 'day')
+          .utc()
+          .valueOf();
+        const end = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
+          .add(i, 'day')
+          .utc()
+          .valueOf();
+
+        const filteredDeliveryHistories = deliveryHistories.filter(
+          (deliveryHistory) => {
+            return (
+              deliveryHistory.createdAt.getTime() > start &&
+              deliveryHistory.createdAt.getTime() < end
+            );
+          },
+        );
+
+        let dayStatisticData: IDayStatisticData;
+        dayStatisticData.income = 0;
+        dayStatisticData.commission = 0;
+        dayStatisticData.numOrderFinished = 0;
+        if (
+          filteredDeliveryHistories &&
+          filteredDeliveryHistories.length !== 0
+        ) {
+          for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+            dayStatisticData.income += filteredDeliveryHistories[i].income;
+            dayStatisticData.commission +=
+              filteredDeliveryHistories[i].commissionFee;
+            dayStatisticData.numOrderFinished += 1;
+          }
+        }
+
+        statistic.push(dayStatisticData);
+      }
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Calculate monthly statistic successfully',
+        statistic: statistic,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Test locking route 1
+  async testUpdateAccountWallet(testUpdateAccountWalletDto) {
+    const { callerId, driverId } = testUpdateAccountWalletDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+
+    let queryRunner;
+    try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      //TODO: Lấy thông tin accountWallet
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
+        .createQueryBuilder('accountW')
+        .leftJoin('accountW.driver', 'driver')
+        .setLock('pessimistic_write')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      if (!accountWallet) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Account wallet not found with the associated driverId',
+        };
+      }
+      accountWallet.mainBalance += 5;
+      await queryRunner.manager.save(AccountWallet, accountWallet);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        accountWallet: accountWallet,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+    // finally {
+    //   if (queryRunner) {
+    //     await queryRunner.release();
+    //   }
+    // }
+  }
+
+  //! Test locking route 2
+  async testGetAccountWallet(testGetAccountWalletDto) {
+    const { callerId, driverId } = testGetAccountWalletDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    let queryRunner;
+    try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      console.log('Getting ACCOUNTWALLET');
+      //TODO: Lấy thông tin accountWallet
+      const accountWallet = await queryRunner.manager
+        .getRepository(AccountWallet)
+        .createQueryBuilder('accountW')
+        .leftJoin('accountW.driver', 'driver')
+        .setLock('pessimistic_write')
+        .where('driver.id = :driverId', { driverId: driverId })
+        .getOne();
+
+      console.log('Get success');
+
+      if (!accountWallet) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Account wallet not found with the associated driverId',
+        };
+      }
+
+      accountWallet.mainBalance -= 1;
+      await queryRunner.manager.save(AccountWallet, accountWallet);
+      await queryRunner.commitTransaction();
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        accountWallet: accountWallet,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      await queryRunner.rollbackTransaction();
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
     } finally {
       if (queryRunner) {
         await queryRunner.release();

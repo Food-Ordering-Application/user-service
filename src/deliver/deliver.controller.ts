@@ -7,6 +7,7 @@ import {
   DepositMoneyIntoMainAccountWalletDto,
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
+  GetDriverStatisticDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   OrderHasBeenAssignedToDriverEventDto,
@@ -20,7 +21,9 @@ import {
   IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
+  IDriverDailyStatisticResponse,
   IDriverResponse,
+  IDriverStatisticResponse,
   IDriverTransactionsResponse,
   IGetDriverInformationResponse,
   IIsActiveResponse,
@@ -148,6 +151,7 @@ export class DeliverController {
     @Payload()
     orderHasBeenAssignedToDriverEventDto: OrderHasBeenAssignedToDriverEventDto,
   ) {
+    console.log('orderHasBeenAssignedToDriverEvent');
     this.deliverService.orderHasBeenAssignedToDriverEvent(
       orderHasBeenAssignedToDriverEventDto,
     );
@@ -159,8 +163,61 @@ export class DeliverController {
     @Payload()
     orderHasBeenCompletedEventDto: OrderHasBeenCompletedEventDto,
   ) {
+    console.log('orderHasBeenCompletedEvent');
     this.deliverService.orderHasBeenCompletedEvent(
       orderHasBeenCompletedEventDto,
     );
+  }
+
+  // //! Api thống kê theo ngày
+  // @MessagePattern('getDriverDailyStatistic')
+  // async getDriverDailyStatistic(
+  //   @Payload()
+  //   getDriverDailyStatisticDto: GetDriverStatisticDto,
+  // ): Promise<IDriverDailyStatisticResponse> {
+  //   return this.deliverService.getDriverDailyStatistic(
+  //     getDriverDailyStatisticDto,
+  //   );
+  // }
+
+  //! Api thống kê theo tuần
+  @MessagePattern('getDriverWeeklyStatistic')
+  async getDriverWeeklyStatistic(
+    @Payload()
+    getDriverWeeklyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    return this.deliverService.getDriverWeeklyStatistic(
+      getDriverWeeklyStatisticDto,
+    );
+  }
+
+  //! Api thống kê theo tháng
+  @MessagePattern('getDriverMonthlyStatistic')
+  async getDriverMonthlyStatistic(
+    @Payload()
+    getDriverMonthlyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverStatisticResponse> {
+    return this.deliverService.getDriverMonthlyStatistic(
+      getDriverMonthlyStatisticDto,
+    );
+  }
+
+  //! Test locking route 1
+  @MessagePattern('testUpdateAccountWallet')
+  async testUpdateAccountWallet(
+    @Payload()
+    testUpdateAccountWalletDto,
+  ) {
+    return this.deliverService.testUpdateAccountWallet(
+      testUpdateAccountWalletDto,
+    );
+  }
+  //! Test locking route 2
+  @MessagePattern('testGetAccountWallet')
+  async testGetAccountWallet(
+    @Payload()
+    testGetAccountWalletDto,
+  ) {
+    return this.deliverService.testGetAccountWallet(testGetAccountWalletDto);
   }
 }

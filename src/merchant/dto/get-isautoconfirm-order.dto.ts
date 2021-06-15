@@ -1,3 +1,3 @@
-export class GetIsAutoConfirmDto {
+export class GetIsAutoConfirmOrderDto {
   restaurantId: string;
 }
