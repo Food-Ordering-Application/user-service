@@ -1396,12 +1396,17 @@ export class DeliverService {
         dayStatisticData.commission = 0;
         dayStatisticData.numOrderFinished = 0;
 
-        for (let i = 0; i < filteredDeliveryHistories.length; i++) {
-          console.log('FILTERED ROW', filteredDeliveryHistories[i]);
-          dayStatisticData.income += filteredDeliveryHistories[i].income;
-          dayStatisticData.commission +=
-            filteredDeliveryHistories[i].commissionFee;
-          dayStatisticData.numOrderFinished += 1;
+        if (
+          filteredDeliveryHistories &&
+          filteredDeliveryHistories.length !== 0
+        ) {
+          for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+            console.log('FILTERED ROW', filteredDeliveryHistories[i]);
+            dayStatisticData.income += filteredDeliveryHistories[i].income;
+            dayStatisticData.commission +=
+              filteredDeliveryHistories[i].commissionFee;
+            dayStatisticData.numOrderFinished += 1;
+          }
         }
 
         statistic.push(dayStatisticData);
