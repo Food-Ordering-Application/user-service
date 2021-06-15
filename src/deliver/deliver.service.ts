@@ -929,7 +929,9 @@ export class DeliverService {
         }
       }
 
-      const driverTransactions = await driverTransactionQueryBuilder.getMany();
+      const driverTransactions = await driverTransactionQueryBuilder
+        .orderBy('driverTransaction.createdAt', 'DESC')
+        .getMany();
 
       return {
         status: HttpStatus.OK,
