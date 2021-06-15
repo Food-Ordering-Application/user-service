@@ -1117,9 +1117,17 @@ export class DeliverService {
   ) {
     let queryRunner;
     try {
-      const { order } = orderHasBeenCompletedEventDto;
+      const {
+        deliveryDistance,
+        deliveryId,
+        driverId,
+        orderGrandTotal,
+        orderId,
+        paymentMethod,
+        shippingFee,
+      } = orderHasBeenCompletedEventDto;
 
-      console.dir(order, { depth: 4 });
+      // console.dir(order, { depth: 4 });
 
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
@@ -1128,8 +1136,8 @@ export class DeliverService {
       const promises: (() => Promise<any>)[] = [];
 
       //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
-      if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
-        const moneyToAdd = order.grandTotal;
+      if (paymentMethod === EPaymentMethod.PAYPAL) {
+        const moneyToAdd = orderGrandTotal;
         console.log('MoneyToAdd', moneyToAdd);
 
         const accountWallet = await queryRunner.manager
@@ -1137,13 +1145,13 @@ export class DeliverService {
           .createQueryBuilder('accountW')
           .setLock('pessimistic_write')
           .leftJoinAndSelect('accountW.driver', 'driver')
-          .where('driver.id = :driverId', { driverId: order.delivery.driverId })
+          .where('driver.id = :driverId', { driverId: driverId })
           .getOne();
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_ADD
         const accountTransaction = this.accountTransactionRepository.create({
           amount: moneyToAdd,
-          driverId: order.delivery.driverId,
+          driverId: driverId,
           operationType: EOperationType.SYSTEM_ADD,
           accountBalance: accountWallet.mainBalance,
         });
@@ -1159,13 +1167,13 @@ export class DeliverService {
       }
 
       const deliveryHistory = this.deliveryHistoryRepository.create({
-        driverId: order.delivery.driverId,
-        orderId: order.id,
-        deliveryId: order.delivery.id,
-        shippingFee: order.delivery.shippingFee,
-        totalDistance: order.delivery.distance,
-        commissionFee: order.delivery.shippingFee * COMMISSION_FEE_PERCENT,
-        income: order.delivery.shippingFee * (1 - COMMISSION_FEE_PERCENT),
+        driverId: driverId,
+        orderId: orderId,
+        deliveryId: deliveryId,
+        shippingFee: shippingFee,
+        totalDistance: deliveryDistance,
+        commissionFee: shippingFee * COMMISSION_FEE_PERCENT,
+        income: shippingFee * (1 - COMMISSION_FEE_PERCENT),
       });
       const createDeliveryHistory = () =>
         queryRunner.manager.save(DeliveryHistory, deliveryHistory);
