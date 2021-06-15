@@ -1391,7 +1391,7 @@ export class DeliverService {
             dayStatisticData.numOrderFinished += 1;
           }
         }
-
+        console.log('Trig build');
         statistic.push(dayStatisticData);
       }
 
