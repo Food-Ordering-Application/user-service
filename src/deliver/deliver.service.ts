@@ -1245,12 +1245,15 @@ export class DeliverService {
           },
         );
 
+        console.log('FilteredDeliveryHistories', filteredDeliveryHistories);
+
         let dayStatisticData: IDayStatisticData;
         dayStatisticData.income = 0;
         dayStatisticData.commission = 0;
         dayStatisticData.numOrderFinished = 0;
 
         for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+          console.log('FILTERED ROW', filteredDeliveryHistories[i]);
           dayStatisticData.income += filteredDeliveryHistories[i].income;
           dayStatisticData.commission +=
             filteredDeliveryHistories[i].commissionFee;
