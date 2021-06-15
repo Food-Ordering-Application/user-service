@@ -21,6 +21,7 @@ import {
   IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
+  IDriverDailyStatisticResponse,
   IDriverResponse,
   IDriverStatisticResponse,
   IDriverTransactionsResponse,
@@ -167,6 +168,17 @@ export class DeliverController {
       orderHasBeenCompletedEventDto,
     );
   }
+
+  // //! Api thống kê theo ngày
+  // @MessagePattern('getDriverDailyStatistic')
+  // async getDriverDailyStatistic(
+  //   @Payload()
+  //   getDriverDailyStatisticDto: GetDriverStatisticDto,
+  // ): Promise<IDriverDailyStatisticResponse> {
+  //   return this.deliverService.getDriverDailyStatistic(
+  //     getDriverDailyStatisticDto,
+  //   );
+  // }
 
   //! Api thống kê theo tuần
   @MessagePattern('getDriverWeeklyStatistic')

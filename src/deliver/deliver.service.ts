@@ -41,6 +41,7 @@ import {
   ICanDriverAcceptOrderResponse,
   IDayStatisticData,
   IDepositMoneyIntoMainAccountWalletResponse,
+  IDriverDailyStatisticResponse,
   IDriverResponse,
   IDriverStatisticResponse,
   IDriverTransactionsResponse,
@@ -1190,6 +1191,92 @@ export class DeliverService {
     }
   }
 
+  // //! Api thống kê theo ngày
+  // async getDriverDailyStatistic(
+  //   getDriverDailyStatisticDto: GetDriverStatisticDto,
+  // ): Promise<IDriverDailyStatisticResponse> {
+  //   const { callerId, driverId } = getDriverDailyStatisticDto;
+
+  //   //TODO: Nếu như driverId !== callerId
+  //   if (driverId !== callerId) {
+  //     return {
+  //       status: HttpStatus.FORBIDDEN,
+  //       message: 'Forbidden',
+  //     };
+  //   }
+  //   try {
+  //     //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
+  //     const startOfMonthUTC = moment().startOf('month').utc().toISOString();
+  //     const endOfMonthUTC = moment().endOf('month').utc().toISOString();
+  //     //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
+  //     const deliveryHistories = await this.deliveryHistoryRepository
+  //       .createQueryBuilder('deliveryH')
+  //       .where('deliveryH.createdAt >= :startOfMonthUTC', {
+  //         startOfMonthUTC: startOfMonthUTC,
+  //       })
+  //       .andWhere('deliveryH.createdAt <= :endOfMonthUTC', {
+  //         endOfMonthUTC: endOfMonthUTC,
+  //       })
+  //       .getMany();
+
+  //     if (!deliveryHistories || deliveryHistories.length === 0) {
+  //       return {
+  //         status: HttpStatus.NOT_FOUND,
+  //         message: 'Cannot found any statistic about this month',
+  //       };
+  //     }
+
+  //     const date = moment().startOf('month');
+
+  //     const statistic: IDayStatisticData[] = [];
+
+  //     const daysInMonth = moment().daysInMonth();
+
+  //     for (let i = 1; i <= daysInMonth; i++) {
+  //       const start = date
+  //         .add(i - 1, 'day')
+  //         .utc()
+  //         .valueOf();
+  //       const end = date.add(i, 'day').utc().valueOf();
+
+  //       const filteredDeliveryHistories = deliveryHistories.filter(
+  //         (deliveryHistory) => {
+  //           return (
+  //             deliveryHistory.createdAt.getTime() > start &&
+  //             deliveryHistory.createdAt.getTime() < end
+  //           );
+  //         },
+  //       );
+
+  //       let dayStatisticData: IDayStatisticData;
+  //       dayStatisticData.income = 0;
+  //       dayStatisticData.commission = 0;
+  //       dayStatisticData.numOrderFinished = 0;
+
+  //       for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+  //         dayStatisticData.income += filteredDeliveryHistories[i].income;
+  //         dayStatisticData.commission +=
+  //           filteredDeliveryHistories[i].commissionFee;
+  //         dayStatisticData.numOrderFinished += 1;
+  //       }
+
+  //       statistic.push(dayStatisticData);
+  //     }
+
+  //     return {
+  //       status: HttpStatus.OK,
+  //       message: 'Calculate monthly statistic successfully',
+  //       statistic: statistic,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error(error);
+  //     return {
+  //       status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       message: error.message,
+  //     };
+  //   }
+  // }
+
   //! Api thống kê theo tuần
   async getDriverWeeklyStatistic(
     getDriverWeeklyStatisticDto: GetDriverStatisticDto,
@@ -1225,16 +1312,15 @@ export class DeliverService {
         };
       }
 
-      const date = moment().startOf('isoWeek');
-
       const statistic: IDayStatisticData[] = [];
 
       for (let i = 1; i <= 7; i++) {
-        const start = date
+        const start = moment()
+          .startOf('isoWeek')
           .add(i - 1, 'day')
           .utc()
           .valueOf();
-        const end = date.add(i, 'day').utc().valueOf();
+        const end = moment().startOf('isoWeek').add(i, 'day').utc().valueOf();
 
         const filteredDeliveryHistories = deliveryHistories.filter(
           (deliveryHistory) => {
@@ -1247,23 +1333,28 @@ export class DeliverService {
               deliveryHistory.createdAt.getTime(),
             );
             console.log(
-              'DeliveryHistoryCreatedAtEnd',
-              deliveryHistory.createdAt,
-            );
-            console.log(
-              'DeliveryHistoryCreatedAtEnd',
-              deliveryHistory.createdAt.getTime(),
-            );
-            console.log('StartTime', start);
-            console.log(
               'Start',
-              date
+              moment()
+                .startOf('isoWeek')
                 .add(i - 1, 'day')
                 .utc()
                 .toISOString(),
             );
+            console.log('StartTime', start);
+            console.log(
+              'end',
+              moment().startOf('isoWeek').add(i, 'day').utc().toISOString(),
+            );
             console.log('endTime', end);
-            console.log('end', date.add(i, 'day').utc().toISOString());
+
+            console.log(
+              'createdAt.getTime() > start',
+              deliveryHistory.createdAt.getTime() > start,
+            );
+            console.log(
+              'createdAt.getTime() < end',
+              deliveryHistory.createdAt.getTime() < end,
+            );
             return (
               deliveryHistory.createdAt.getTime() > start &&
               deliveryHistory.createdAt.getTime() < end
