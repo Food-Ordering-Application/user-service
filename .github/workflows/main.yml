@@ -12,8 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Check-out your repository.
-      - name: user-service
-        uses: actions/user-service@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+
 
       - name: Build, Push and Release a Docker container to Heroku. # Your custom step name
         uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
