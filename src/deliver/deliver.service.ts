@@ -1238,6 +1238,32 @@ export class DeliverService {
 
         const filteredDeliveryHistories = deliveryHistories.filter(
           (deliveryHistory) => {
+            console.log(
+              'DeliveryHistoryCreatedAtStart',
+              deliveryHistory.createdAt,
+            );
+            console.log(
+              'DeliveryHistoryCreatedAtStart',
+              deliveryHistory.createdAt.getTime(),
+            );
+            console.log(
+              'DeliveryHistoryCreatedAtEnd',
+              deliveryHistory.createdAt,
+            );
+            console.log(
+              'DeliveryHistoryCreatedAtEnd',
+              deliveryHistory.createdAt.getTime(),
+            );
+            console.log('StartTime', start);
+            console.log(
+              'Start',
+              date
+                .add(i - 1, 'day')
+                .utc()
+                .toISOString(),
+            );
+            console.log('endTime', end);
+            console.log('end', date.add(i, 'day').utc().toISOString());
             return (
               deliveryHistory.createdAt.getTime() > start &&
               deliveryHistory.createdAt.getTime() < end
