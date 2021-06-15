@@ -127,7 +127,7 @@ export class MerchantController {
   }
 
   //! Lấy thông tin isAutoConfirm của merchant
-  @MessagePattern('getIsAutoConfirmOrder')
+  @MessagePattern('getIsAutoConfirm')
   async getIsAutoConfirmOrder(
     @Payload()
     getIsAutoConfirmOrderDto: GetIsAutoConfirmOrderDto,
