@@ -1327,12 +1327,21 @@ export class DeliverService {
       for (let i = 1; i <= 7; i++) {
         const start = moment()
           .startOf('isoWeek')
+          .subtract(7, 'hour')
           .add(i - 1, 'day')
           .utc()
           .valueOf();
-        const end = moment().startOf('isoWeek').add(i, 'day').utc().valueOf();
+        const end = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
+          .add(i, 'day')
+          .utc()
+          .valueOf();
 
-        console.log('DAUTUAN', moment().startOf('isoWeek').utc().toISOString());
+        console.log(
+          'DAUTUAN',
+          moment().startOf('isoWeek').subtract(7, 'hour').utc().toISOString(),
+        );
 
         const filteredDeliveryHistories = deliveryHistories.filter(
           (deliveryHistory) => {
@@ -1348,6 +1357,7 @@ export class DeliverService {
               'Start',
               moment()
                 .startOf('isoWeek')
+                .subtract(7, 'hour')
                 .add(i - 1, 'day')
                 .utc()
                 .toISOString(),
@@ -1355,7 +1365,12 @@ export class DeliverService {
             console.log('StartTime', start);
             console.log(
               'end',
-              moment().startOf('isoWeek').add(i, 'day').utc().toISOString(),
+              moment()
+                .startOf('isoWeek')
+                .subtract(7, 'hour')
+                .add(i, 'day')
+                .utc()
+                .toISOString(),
             );
             console.log('endTime', end);
 
