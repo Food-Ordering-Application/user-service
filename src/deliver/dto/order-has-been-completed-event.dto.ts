@@ -1,5 +1,3 @@
-import { IOrder } from '../interfaces';
-
 export class OrderHasBeenCompletedEventDto {
   paymentMethod: string;
   orderGrandTotal: number;
