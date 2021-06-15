@@ -1292,8 +1292,16 @@ export class DeliverService {
     }
     try {
       //TODO: Lấy ngày giờ UTC đầu tuần, cuối tuần
-      const startOfWeekUTC = moment().startOf('isoWeek').utc().toISOString();
-      const endOfWeekUTC = moment().endOf('isoWeek').utc().toISOString();
+      const startOfWeekUTC = moment()
+        .startOf('isoWeek')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      const endOfWeekUTC = moment()
+        .endOf('isoWeek')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
       console.log('startOfWeekUTC', startOfWeekUTC);
       console.log('endOfWeekUTC', endOfWeekUTC);
       //TODO: Lấy thông tin deliveryHistory của driver trong tuần này
