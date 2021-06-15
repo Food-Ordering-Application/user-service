@@ -1322,6 +1322,8 @@ export class DeliverService {
           .valueOf();
         const end = moment().startOf('isoWeek').add(i, 'day').utc().valueOf();
 
+        console.log('DAUTUAN', moment().startOf('isoWeek').utc().toISOString());
+
         const filteredDeliveryHistories = deliveryHistories.filter(
           (deliveryHistory) => {
             console.log(
