@@ -512,7 +512,7 @@ export class DeliverService {
       return {
         status: HttpStatus.OK,
         message: 'Approve deposit money into main account wallet successfully',
-        mainBalance: driverTransaction.driver.wallet.mainBalance,
+        mainBalance: accountWallet.mainBalance,
       };
     } catch (error) {
       this.logger.error(error);
@@ -692,11 +692,6 @@ export class DeliverService {
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
-
-      //TODO: Lock
-      // await queryRunner.query(
-      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      // );
 
       const queryBuilder = queryRunner.manager
         .getRepository(DriverTransaction)
@@ -1127,10 +1122,6 @@ export class DeliverService {
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
-      //TODO: Lock
-      // await queryRunner.query(
-      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      // );
 
       const promises: (() => Promise<any>)[] = [];
 
