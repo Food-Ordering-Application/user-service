@@ -161,6 +161,7 @@ export class DeliverController {
     @Payload()
     orderHasBeenCompletedEventDto: OrderHasBeenCompletedEventDto,
   ) {
+    console.log('orderHasBeenCompletedEvent');
     this.deliverService.orderHasBeenCompletedEvent(
       orderHasBeenCompletedEventDto,
     );
