@@ -443,12 +443,7 @@ export class DeliverService {
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
-
-      //TODO: Lock
-      // await queryRunner.query(
-      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      // );
-
+      console.log('START TRANSACTION');
       //TODO: Lấy DriverTransaction và PayinTransaction của driver
       //TODO: Lấy thông tin accountWallet của driver
       const [driverTransaction, accountWallet] = await Promise.all([
@@ -511,9 +506,9 @@ export class DeliverService {
         ),
         queryRunner.manager.save(AccountWallet, accountWallet),
       ]);
-
+      console.log('BEFORE COMMIT TRANSACTION');
       await queryRunner.commitTransaction();
-
+      console.log('AFTER COMMIT TRANSACTION');
       return {
         status: HttpStatus.OK,
         message: 'Approve deposit money into main account wallet successfully',
