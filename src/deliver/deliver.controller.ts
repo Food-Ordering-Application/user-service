@@ -150,6 +150,7 @@ export class DeliverController {
     @Payload()
     orderHasBeenAssignedToDriverEventDto: OrderHasBeenAssignedToDriverEventDto,
   ) {
+    console.log('orderHasBeenAssignedToDriverEvent');
     this.deliverService.orderHasBeenAssignedToDriverEvent(
       orderHasBeenAssignedToDriverEventDto,
     );

@@ -1035,25 +1035,24 @@ export class DeliverService {
   ) {
     let queryRunner;
     try {
-      const { order } = orderHasBeenAssignedToDriverEventDto;
+      const { paymentMethod, driverId, orderSubtotal, shippingFee } =
+        orderHasBeenAssignedToDriverEventDto;
 
-      console.dir(order, { depth: 4 });
+      console.log('paymentMethod', paymentMethod);
+      console.log('driverId', driverId);
+      console.log('orderSubtotal', orderSubtotal);
+      console.log('shippingFee', shippingFee);
 
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
-
-      //TODO: Lock
-      // await queryRunner.query(
-      //   'LOCK TABLE accountWallet IN ACCESS EXCLUSIVE MODE',
-      // );
 
       const accountWallet = await queryRunner.manager
         .getRepository(AccountWallet)
         .createQueryBuilder('accountW')
         .setLock('pessimistic_write')
         .leftJoinAndSelect('accountW.driver', 'driver')
-        .where('driver.id = :driverId', { driverId: order.delivery.driverId })
+        .where('driver.id = :driverId', { driverId: driverId })
         .getOne();
 
       if (!accountWallet) {
@@ -1061,10 +1060,10 @@ export class DeliverService {
         return;
       }
 
-      if (order.invoice.payment.method === EPaymentMethod.PAYPAL) {
+      if (paymentMethod === EPaymentMethod.PAYPAL) {
         //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
         const moneyToDeduct =
-          COMMISSION_FEE_PERCENT * order.delivery.shippingFee + order.subTotal;
+          COMMISSION_FEE_PERCENT * shippingFee + orderSubtotal;
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
         const accountTransaction = this.accountTransactionRepository.create({
@@ -1080,10 +1079,9 @@ export class DeliverService {
           queryRunner.manager.save(AccountWallet, accountWallet),
           queryRunner.manager.save(AccountTransaction, accountTransaction),
         ]);
-      } else if (order.invoice.payment.method === EPaymentMethod.COD) {
+      } else if (paymentMethod === EPaymentMethod.COD) {
         //TODO: Trừ 20% tiền hoa hồng trong tài khoản driver
-        const moneyToDeduct =
-          COMMISSION_FEE_PERCENT * order.delivery.shippingFee;
+        const moneyToDeduct = COMMISSION_FEE_PERCENT * shippingFee;
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_DEDUCT
         const accountTransaction = this.accountTransactionRepository.create({
