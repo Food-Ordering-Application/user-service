@@ -1191,91 +1191,74 @@ export class DeliverService {
     }
   }
 
-  // //! Api thống kê theo ngày
-  // async getDriverDailyStatistic(
-  //   getDriverDailyStatisticDto: GetDriverStatisticDto,
-  // ): Promise<IDriverDailyStatisticResponse> {
-  //   const { callerId, driverId } = getDriverDailyStatisticDto;
+  //! Api thống kê theo ngày
+  async getDriverDailyStatistic(
+    getDriverDailyStatisticDto: GetDriverStatisticDto,
+  ): Promise<IDriverDailyStatisticResponse> {
+    const { callerId, driverId } = getDriverDailyStatisticDto;
 
-  //   //TODO: Nếu như driverId !== callerId
-  //   if (driverId !== callerId) {
-  //     return {
-  //       status: HttpStatus.FORBIDDEN,
-  //       message: 'Forbidden',
-  //     };
-  //   }
-  //   try {
-  //     //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
-  //     const startOfMonthUTC = moment().startOf('month').utc().toISOString();
-  //     const endOfMonthUTC = moment().endOf('month').utc().toISOString();
-  //     //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
-  //     const deliveryHistories = await this.deliveryHistoryRepository
-  //       .createQueryBuilder('deliveryH')
-  //       .where('deliveryH.createdAt >= :startOfMonthUTC', {
-  //         startOfMonthUTC: startOfMonthUTC,
-  //       })
-  //       .andWhere('deliveryH.createdAt <= :endOfMonthUTC', {
-  //         endOfMonthUTC: endOfMonthUTC,
-  //       })
-  //       .getMany();
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
+      const startOfDayUTC = moment()
+        .startOf('day')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      const endOfDayUTC = moment()
+        .endOf('day')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      console.log('');
+      //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
+      const deliveryHistories = await this.deliveryHistoryRepository
+        .createQueryBuilder('deliveryH')
+        .where('deliveryH.createdAt >= :startOfDayUTC', {
+          startOfDayUTC: startOfDayUTC,
+        })
+        .andWhere('deliveryH.createdAt <= :endOfDayUTC', {
+          endOfDayUTC: endOfDayUTC,
+        })
+        .getMany();
 
-  //     if (!deliveryHistories || deliveryHistories.length === 0) {
-  //       return {
-  //         status: HttpStatus.NOT_FOUND,
-  //         message: 'Cannot found any statistic about this month',
-  //       };
-  //     }
+      if (!deliveryHistories || deliveryHistories.length === 0) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'Cannot found any statistic about this month',
+        };
+      }
 
-  //     const date = moment().startOf('month');
+      let dayStatisticData: IDayStatisticData;
+      dayStatisticData.income = 0;
+      dayStatisticData.commission = 0;
+      dayStatisticData.numOrderFinished = 0;
 
-  //     const statistic: IDayStatisticData[] = [];
+      for (let i = 0; i < deliveryHistories.length; i++) {
+        dayStatisticData.income += deliveryHistories[i].income;
+        dayStatisticData.commission += deliveryHistories[i].commissionFee;
+        dayStatisticData.numOrderFinished += 1;
+      }
 
-  //     const daysInMonth = moment().daysInMonth();
-
-  //     for (let i = 1; i <= daysInMonth; i++) {
-  //       const start = date
-  //         .add(i - 1, 'day')
-  //         .utc()
-  //         .valueOf();
-  //       const end = date.add(i, 'day').utc().valueOf();
-
-  //       const filteredDeliveryHistories = deliveryHistories.filter(
-  //         (deliveryHistory) => {
-  //           return (
-  //             deliveryHistory.createdAt.getTime() > start &&
-  //             deliveryHistory.createdAt.getTime() < end
-  //           );
-  //         },
-  //       );
-
-  //       let dayStatisticData: IDayStatisticData;
-  //       dayStatisticData.income = 0;
-  //       dayStatisticData.commission = 0;
-  //       dayStatisticData.numOrderFinished = 0;
-
-  //       for (let i = 0; i < filteredDeliveryHistories.length; i++) {
-  //         dayStatisticData.income += filteredDeliveryHistories[i].income;
-  //         dayStatisticData.commission +=
-  //           filteredDeliveryHistories[i].commissionFee;
-  //         dayStatisticData.numOrderFinished += 1;
-  //       }
-
-  //       statistic.push(dayStatisticData);
-  //     }
-
-  //     return {
-  //       status: HttpStatus.OK,
-  //       message: 'Calculate monthly statistic successfully',
-  //       statistic: statistic,
-  //     };
-  //   } catch (error) {
-  //     this.logger.error(error);
-  //     return {
-  //       status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       message: error.message,
-  //     };
-  //   }
-  // }
+      return {
+        status: HttpStatus.OK,
+        message: 'Calculate daily statistic successfully',
+        statistic: dayStatisticData,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
 
   //! Api thống kê theo tuần
   async getDriverWeeklyStatistic(
@@ -1441,8 +1424,16 @@ export class DeliverService {
     }
     try {
       //TODO: Lấy ngày giờ UTC đầu tháng, cuối tháng
-      const startOfMonthUTC = moment().startOf('month').utc().toISOString();
-      const endOfMonthUTC = moment().endOf('month').utc().toISOString();
+      const startOfMonthUTC = moment()
+        .startOf('month')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
+      const endOfMonthUTC = moment()
+        .endOf('month')
+        .subtract(7, 'hour')
+        .utc()
+        .toISOString();
       //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
       const deliveryHistories = await this.deliveryHistoryRepository
         .createQueryBuilder('deliveryH')
@@ -1461,18 +1452,23 @@ export class DeliverService {
         };
       }
 
-      const date = moment().startOf('month');
-
       const statistic: IDayStatisticData[] = [];
 
       const daysInMonth = moment().daysInMonth();
 
       for (let i = 1; i <= daysInMonth; i++) {
-        const start = date
+        const start = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
           .add(i - 1, 'day')
           .utc()
           .valueOf();
-        const end = date.add(i, 'day').utc().valueOf();
+        const end = moment()
+          .startOf('isoWeek')
+          .subtract(7, 'hour')
+          .add(i, 'day')
+          .utc()
+          .valueOf();
 
         const filteredDeliveryHistories = deliveryHistories.filter(
           (deliveryHistory) => {
@@ -1487,12 +1483,16 @@ export class DeliverService {
         dayStatisticData.income = 0;
         dayStatisticData.commission = 0;
         dayStatisticData.numOrderFinished = 0;
-
-        for (let i = 0; i < filteredDeliveryHistories.length; i++) {
-          dayStatisticData.income += filteredDeliveryHistories[i].income;
-          dayStatisticData.commission +=
-            filteredDeliveryHistories[i].commissionFee;
-          dayStatisticData.numOrderFinished += 1;
+        if (
+          filteredDeliveryHistories &&
+          filteredDeliveryHistories.length !== 0
+        ) {
+          for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+            dayStatisticData.income += filteredDeliveryHistories[i].income;
+            dayStatisticData.commission +=
+              filteredDeliveryHistories[i].commissionFee;
+            dayStatisticData.numOrderFinished += 1;
+          }
         }
 
         statistic.push(dayStatisticData);
