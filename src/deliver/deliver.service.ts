@@ -742,12 +742,14 @@ export class DeliverService {
           //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
           driverTransaction.withdrawTransaction.status =
             EWithdrawTransactionStatus.SUCCESS;
+          console.log('ACCOUNTW BEFORE', accountWallet.mainBalance);
           accountWallet.mainBalance -= driverTransaction.amount;
-
+          console.log('ACCOUNTW AFTER', accountWallet.mainBalance);
           this.notificationServiceClient.emit('mainBalanceChange', {
             driverId: driverTransaction.driver.id,
             mainBalance: accountWallet.mainBalance,
           });
+          console.log('SENT NOTIFICATION');
 
           await Promise.all([
             queryRunner.manager.save(
