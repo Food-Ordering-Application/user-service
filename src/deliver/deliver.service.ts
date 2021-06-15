@@ -1294,6 +1294,8 @@ export class DeliverService {
       //TODO: Lấy ngày giờ UTC đầu tuần, cuối tuần
       const startOfWeekUTC = moment().startOf('isoWeek').utc().toISOString();
       const endOfWeekUTC = moment().endOf('isoWeek').utc().toISOString();
+      console.log('startOfWeekUTC', startOfWeekUTC);
+      console.log('endOfWeekUTC', endOfWeekUTC);
       //TODO: Lấy thông tin deliveryHistory của driver trong tuần này
       const deliveryHistories = await this.deliveryHistoryRepository
         .createQueryBuilder('deliveryH')
