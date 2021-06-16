@@ -1231,7 +1231,7 @@ export class DeliverService {
       if (!deliveryHistories || deliveryHistories.length === 0) {
         return {
           status: HttpStatus.NOT_FOUND,
-          message: 'Cannot found any statistic about this month',
+          message: 'Cannot found any statistic about this day',
         };
       }
 
@@ -1430,6 +1430,9 @@ export class DeliverService {
         .subtract(7, 'hour')
         .utc()
         .toISOString();
+
+      console.log('startOfMonthUTC', startOfMonthUTC);
+      console.log('endOfMonthUTC', endOfMonthUTC);
       //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
       const deliveryHistories = await this.deliveryHistoryRepository
         .createQueryBuilder('deliveryH')
@@ -1451,7 +1454,7 @@ export class DeliverService {
       const statistic: IDayStatisticData[] = [];
 
       const daysInMonth = moment().daysInMonth();
-
+      console.log('daysInMonth', daysInMonth);
       for (let i = 1; i <= daysInMonth; i++) {
         const start = moment()
           .startOf('isoWeek')
@@ -1465,9 +1468,28 @@ export class DeliverService {
           .add(i, 'day')
           .utc()
           .valueOf();
+        console.log(
+          'start',
+          moment()
+            .startOf('isoWeek')
+            .subtract(7, 'hour')
+            .add(i, 'day')
+            .utc()
+            .toISOString(),
+        );
+        console.log(
+          'end',
+          moment()
+            .startOf('isoWeek')
+            .subtract(7, 'hour')
+            .add(i, 'day')
+            .utc()
+            .toISOString(),
+        );
 
         const filteredDeliveryHistories = deliveryHistories.filter(
           (deliveryHistory) => {
+            console.log('deliveryHistory', deliveryHistory.createdAt);
             return (
               deliveryHistory.createdAt.getTime() > start &&
               deliveryHistory.createdAt.getTime() < end
