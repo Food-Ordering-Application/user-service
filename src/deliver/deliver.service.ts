@@ -1374,10 +1374,11 @@ export class DeliverService {
 
         console.log('FilteredDeliveryHistories', filteredDeliveryHistories);
 
-        let dayStatisticData: IDayStatisticData;
-        dayStatisticData.income = 0;
-        dayStatisticData.commission = 0;
-        dayStatisticData.numOrderFinished = 0;
+        const dayStatisticData: IDayStatisticData = {
+          income: 0,
+          commission: 0,
+          numOrderFinished: 0,
+        };
 
         if (
           filteredDeliveryHistories &&
