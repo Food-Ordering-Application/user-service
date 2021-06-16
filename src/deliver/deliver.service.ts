@@ -1235,10 +1235,11 @@ export class DeliverService {
         };
       }
 
-      let dayStatisticData: IDayStatisticData;
-      dayStatisticData.income = 0;
-      dayStatisticData.commission = 0;
-      dayStatisticData.numOrderFinished = 0;
+      const dayStatisticData: IDayStatisticData = {
+        income: 0,
+        commission: 0,
+        numOrderFinished: 0,
+      };
 
       for (let i = 0; i < deliveryHistories.length; i++) {
         dayStatisticData.income += deliveryHistories[i].income;
@@ -1380,19 +1381,13 @@ export class DeliverService {
           numOrderFinished: 0,
         };
 
-        if (
-          filteredDeliveryHistories &&
-          filteredDeliveryHistories.length !== 0
-        ) {
-          for (let i = 0; i < filteredDeliveryHistories.length; i++) {
-            console.log('FILTERED ROW', filteredDeliveryHistories[i]);
-            dayStatisticData.income += filteredDeliveryHistories[i].income;
-            dayStatisticData.commission +=
-              filteredDeliveryHistories[i].commissionFee;
-            dayStatisticData.numOrderFinished += 1;
-          }
+        for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+          console.log('FILTERED ROW', filteredDeliveryHistories[i]);
+          dayStatisticData.income += filteredDeliveryHistories[i].income;
+          dayStatisticData.commission +=
+            filteredDeliveryHistories[i].commissionFee;
+          dayStatisticData.numOrderFinished += 1;
         }
-        console.log('Trig build');
         statistic.push(dayStatisticData);
       }
 
@@ -1480,20 +1475,17 @@ export class DeliverService {
           },
         );
 
-        let dayStatisticData: IDayStatisticData;
-        dayStatisticData.income = 0;
-        dayStatisticData.commission = 0;
-        dayStatisticData.numOrderFinished = 0;
-        if (
-          filteredDeliveryHistories &&
-          filteredDeliveryHistories.length !== 0
-        ) {
-          for (let i = 0; i < filteredDeliveryHistories.length; i++) {
-            dayStatisticData.income += filteredDeliveryHistories[i].income;
-            dayStatisticData.commission +=
-              filteredDeliveryHistories[i].commissionFee;
-            dayStatisticData.numOrderFinished += 1;
-          }
+        const dayStatisticData: IDayStatisticData = {
+          income: 0,
+          commission: 0,
+          numOrderFinished: 0,
+        };
+
+        for (let i = 0; i < filteredDeliveryHistories.length; i++) {
+          dayStatisticData.income += filteredDeliveryHistories[i].income;
+          dayStatisticData.commission +=
+            filteredDeliveryHistories[i].commissionFee;
+          dayStatisticData.numOrderFinished += 1;
         }
 
         statistic.push(dayStatisticData);
