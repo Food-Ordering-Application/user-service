@@ -1457,13 +1457,13 @@ export class DeliverService {
       console.log('daysInMonth', daysInMonth);
       for (let i = 1; i <= daysInMonth; i++) {
         const start = moment()
-          .startOf('isoWeek')
+          .startOf('month')
           .subtract(7, 'hour')
           .add(i - 1, 'day')
           .utc()
           .valueOf();
         const end = moment()
-          .startOf('isoWeek')
+          .startOf('month')
           .subtract(7, 'hour')
           .add(i, 'day')
           .utc()
@@ -1471,7 +1471,7 @@ export class DeliverService {
         console.log(
           'start',
           moment()
-            .startOf('isoWeek')
+            .startOf('month')
             .subtract(7, 'hour')
             .add(i, 'day')
             .utc()
@@ -1480,7 +1480,7 @@ export class DeliverService {
         console.log(
           'end',
           moment()
-            .startOf('isoWeek')
+            .startOf('month')
             .subtract(7, 'hour')
             .add(i, 'day')
             .utc()
