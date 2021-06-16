@@ -1374,13 +1374,13 @@ export class DeliverService {
         );
 
         console.log('FilteredDeliveryHistories', filteredDeliveryHistories);
-
+        console.log('BEFORE');
         const dayStatisticData: IDayStatisticData = {
           income: 0,
           commission: 0,
           numOrderFinished: 0,
         };
-
+        console.log('AFTER');
         for (let i = 0; i < filteredDeliveryHistories.length; i++) {
           console.log('FILTERED ROW', filteredDeliveryHistories[i]);
           dayStatisticData.income += filteredDeliveryHistories[i].income;
