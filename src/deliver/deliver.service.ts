@@ -1196,7 +1196,7 @@ export class DeliverService {
     getDriverDailyStatisticDto: GetDriverStatisticDto,
   ): Promise<IDriverDailyStatisticResponse> {
     const { callerId, driverId } = getDriverDailyStatisticDto;
-
+    console.log('TODAY STATISTIC');
     //TODO: Nếu như driverId !== callerId
     if (driverId !== callerId) {
       return {
@@ -1216,7 +1216,7 @@ export class DeliverService {
         .subtract(7, 'hour')
         .utc()
         .toISOString();
-      console.log('');
+      console.log('HELLO');
       //TODO: Lấy thông tin deliveryHistory của driver trong tháng này
       const deliveryHistories = await this.deliveryHistoryRepository
         .createQueryBuilder('deliveryH')
