@@ -1229,8 +1229,14 @@ export class DeliverService {
         };
       }
 
+      const date = moment().endOf('day').utc();
+
       const dayStatisticData: IDayStatisticData = {
-        date: moment().startOf('day').utc().toISOString(),
+        date: {
+          day: date.format('D'),
+          month: date.format('M'),
+          year: date.format('YYYY'),
+        },
         income: 0,
         commission: 0,
         numOrderFinished: 0,
@@ -1370,12 +1376,17 @@ export class DeliverService {
 
         console.log('FilteredDeliveryHistories', filteredDeliveryHistories);
         console.log('BEFORE');
+        const date = moment()
+          .startOf('isoWeek')
+          .add(i - 1, 'day')
+          .utc();
+
         const dayStatisticData: IDayStatisticData = {
-          date: moment()
-            .startOf('isoWeek')
-            .add(i - 1, 'day')
-            .utc()
-            .toISOString(),
+          date: {
+            day: date.format('D'),
+            month: date.format('M'),
+            year: date.format('YYYY'),
+          },
           income: 0,
           commission: 0,
           numOrderFinished: 0,
@@ -1497,8 +1508,18 @@ export class DeliverService {
           },
         );
 
+        const date = moment()
+          .startOf('month')
+          .subtract(7, 'hour')
+          .add(i, 'day')
+          .utc();
+
         const dayStatisticData: IDayStatisticData = {
-          date: moment().startOf('month').utc().toISOString(),
+          date: {
+            day: date.format('D'),
+            month: date.format('M'),
+            year: date.format('YYYY'),
+          },
           income: 0,
           commission: 0,
           numOrderFinished: 0,
