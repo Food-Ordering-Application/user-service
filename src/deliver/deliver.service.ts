@@ -488,7 +488,6 @@ export class DeliverService {
       //TODO: Call PayPal to capture the order
       const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
       request.requestBody({});
-
       const capture = await client().execute(request);
       //TODO: Save the capture ID to your database.
       const captureID =
@@ -613,9 +612,6 @@ export class DeliverService {
           },
         ],
       };
-
-      // Construct a request object and set desired parameters
-      // Here, PayoutsPostRequest() creates a POST request to /v1/payments/payouts
       const request = new paypalPayout.payouts.PayoutsPostRequest();
       request.requestBody(requestBody);
       try {
@@ -743,9 +739,7 @@ export class DeliverService {
           //TODO: Update lại trạng thái WithdrawTransaction và update tiền của driver
           driverTransaction.withdrawTransaction.status =
             EWithdrawTransactionStatus.SUCCESS;
-          console.log('ACCOUNTW BEFORE', accountWallet.mainBalance);
           accountWallet.mainBalance -= driverTransaction.amount;
-          console.log('ACCOUNTW AFTER', accountWallet.mainBalance);
           this.notificationServiceClient.emit('mainBalanceChange', {
             driverId: driverTransaction.driver.id,
             mainBalance: accountWallet.mainBalance,
@@ -1236,6 +1230,7 @@ export class DeliverService {
       }
 
       const dayStatisticData: IDayStatisticData = {
+        date: moment().startOf('day').utc().toISOString(),
         income: 0,
         commission: 0,
         numOrderFinished: 0,
@@ -1376,6 +1371,11 @@ export class DeliverService {
         console.log('FilteredDeliveryHistories', filteredDeliveryHistories);
         console.log('BEFORE');
         const dayStatisticData: IDayStatisticData = {
+          date: moment()
+            .startOf('isoWeek')
+            .add(i - 1, 'day')
+            .utc()
+            .toISOString(),
           income: 0,
           commission: 0,
           numOrderFinished: 0,
@@ -1498,6 +1498,7 @@ export class DeliverService {
         );
 
         const dayStatisticData: IDayStatisticData = {
+          date: moment().startOf('month').utc().toISOString(),
           income: 0,
           commission: 0,
           numOrderFinished: 0,
