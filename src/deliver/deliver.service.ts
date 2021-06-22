@@ -243,11 +243,14 @@ export class DeliverService {
         case EPaymentMethod.COD:
           //TODO: Check xem trong ví (tài khoản chính - 20%*shippingFee).abs() > 50% * tài khoản ký quỹ
           if (
+            accountWallet.mainBalance -
+              COMMISSION_FEE_PERCENT * order.delivery.shippingFee <
+              0 &&
             Math.abs(
               accountWallet.mainBalance -
                 COMMISSION_FEE_PERCENT * order.delivery.shippingFee,
             ) >
-            DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
+              DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
           ) {
             return {
               status: HttpStatus.FORBIDDEN,
@@ -267,12 +270,16 @@ export class DeliverService {
           //TODO: Check xem trong ví (tài khoản chính - 20%*shippingFee - tiền hàng).abs()
           //TODO: > 50% * tài khoản ký quỹ
           if (
+            accountWallet.mainBalance -
+              COMMISSION_FEE_PERCENT * order.delivery.shippingFee -
+              order.subTotal <
+              0 &&
             Math.abs(
               accountWallet.mainBalance -
                 COMMISSION_FEE_PERCENT * order.delivery.shippingFee -
                 order.subTotal,
             ) >
-            DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
+              DEPOSIT_BALANCE_LIMIT_PERCENT * accountWallet.depositBalance
           ) {
             return {
               status: HttpStatus.FORBIDDEN,
