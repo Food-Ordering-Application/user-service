@@ -377,7 +377,7 @@ export class MerchantService {
         merchantId: merchantId,
         restaurantId: restaurantId,
       },
-      { relations: ['payment'] },
+      { relations: ['paymentInfo'] },
     );
 
     if (!paymentOfRestaurant) {
@@ -417,7 +417,7 @@ export class MerchantService {
         merchantId: merchantId,
         restaurantId: restaurantId,
       },
-      { relations: ['payment'] },
+      { relations: ['paymentInfo'] },
     );
 
     if (!paymentOfRestaurant) {
@@ -487,7 +487,7 @@ export class MerchantService {
         merchantId: merchantId,
         restaurantId: restaurantId,
       },
-      { relations: ['payment'] },
+      { relations: ['paymentInfo'] },
     );
 
     if (!paymentOfRestaurant) {
