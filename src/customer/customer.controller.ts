@@ -110,12 +110,12 @@ export class CustomerController {
     );
   }
 
-  // Lấy địa chỉ default của customer
+  //! Lấy địa chỉ default của customer
   @MessagePattern('getDefaultCustomerAddressInfo')
   getDefaultCustomerAddressInfo(
     @Payload()
     getDefaultCustomerAddressInfoDto: GetDefaultCustomerAddressInfoDto,
-  ): Promise<IGetAddressResponse> {
+  ): Promise<ICustomerAddressResponse> {
     return this.customerService.getDefaultCustomerAddressInfo(
       getDefaultCustomerAddressInfoDto,
     );
@@ -131,7 +131,7 @@ export class CustomerController {
     );
   }
 
-  // Update địa chỉ default của customer
+  //! Update địa chỉ default của customer
   @MessagePattern('updateDefaultCustomerAddress')
   updateDefaultCustomerAddress(
     @Payload()
