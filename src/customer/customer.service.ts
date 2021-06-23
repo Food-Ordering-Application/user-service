@@ -393,7 +393,7 @@ export class CustomerService {
 
   async getDefaultCustomerAddressInfo(
     getDefaultCustomerAddressInfoDto: GetDefaultCustomerAddressInfoDto,
-  ): Promise<IGetAddressResponse> {
+  ): Promise<ICustomerAddressResponse> {
     try {
       const { customerId } = getDefaultCustomerAddressInfoDto;
 
@@ -411,28 +411,20 @@ export class CustomerService {
       //TODO: Nếu user chưa có address thì trả về null
       if (!defaultAddress) {
         return {
-          status: HttpStatus.OK,
+          status: HttpStatus.NOT_FOUND,
           message: 'Customer has no address',
-          data: {
-            address: null,
-            geom: null,
-          },
         };
       }
       return {
         status: HttpStatus.OK,
         message: 'Customer addresses fetched successfully',
-        data: {
-          address: defaultAddress.address,
-          geom: defaultAddress.geom,
-        },
+        address: defaultAddress,
       };
     } catch (error) {
       this.logger.error(error);
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
-        data: null,
       };
     }
   }
