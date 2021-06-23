@@ -9,6 +9,7 @@ import {
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
   GetDriverStatisticDto,
+  GetListDriverAccountTransactionDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   OrderHasBeenAssignedToDriverEventDto,
@@ -35,8 +36,10 @@ import {
   EOperationType,
   EGeneralTransactionStatus,
   EIsActive,
+  EAccountTransaction,
 } from './enums';
 import {
+  IAccountTransactionsReponse,
   IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
   IDayStatisticData,
@@ -941,6 +944,94 @@ export class DeliverService {
         status: HttpStatus.OK,
         message: 'Successfully',
         driverTransactions,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  //! Lấy danh sách lịch sử giao dịch trừ cộng tiền hệ thống của driver
+  async getListAccountTransactionDriver(
+    getListAccountTransactionDriverDto: GetListDriverAccountTransactionDto,
+  ): Promise<IAccountTransactionsReponse> {
+    const {
+      callerId,
+      driverId,
+      page = 1,
+      query = 'ALL',
+      size = 10,
+      from = null,
+      to = null,
+    } = getListAccountTransactionDriverDto;
+
+    //TODO: Nếu như driverId !== callerId
+    if (driverId !== callerId) {
+      return {
+        status: HttpStatus.FORBIDDEN,
+        message: 'Forbidden',
+      };
+    }
+    try {
+      //TODO: Lấy thông tin driverTransaction
+      let accountTransactionQueryBuilder = this.accountTransactionRepository
+        .createQueryBuilder('accountTransaction')
+        .leftJoin('accountTransaction.driver', 'driver')
+        .skip((page - 1) * size)
+        .take(size)
+        .where('driver.id = :driverId', { driverId: driverId });
+
+      console.log('from', from);
+      console.log('to', to);
+
+      if (from && to) {
+        const fromDate = momenttimezone
+          .tz(from, 'Asia/Ho_Chi_Minh')
+          .utc()
+          .format();
+        const toDate = momenttimezone.tz(to, 'Asia/Ho_Chi_Minh').utc().format();
+
+        console.log('fromDate', fromDate);
+        console.log('toDate', toDate);
+
+        accountTransactionQueryBuilder = accountTransactionQueryBuilder
+          .andWhere('accountTransaction.createdAt >= :startDate', {
+            startDate: fromDate,
+          })
+          .andWhere('accountTransaction.createdAt <= :endDate', {
+            endDate: toDate,
+          });
+      }
+
+      if (query === EAccountTransaction.SYSTEMADD) {
+        accountTransactionQueryBuilder =
+          accountTransactionQueryBuilder.andWhere(
+            'accountTransaction.operationType = :accountTransactionType',
+            {
+              accountTransactionType: EOperationType.SYSTEM_ADD,
+            },
+          );
+      } else if (query === EAccountTransaction.SYSTEMDEDUCT) {
+        accountTransactionQueryBuilder =
+          accountTransactionQueryBuilder.andWhere(
+            'accountTransaction.operationType = :accountTransactionType',
+            {
+              accountTransactionType: EOperationType.SYSTEM_DEDUCT,
+            },
+          );
+      }
+
+      const accountTransactions = await accountTransactionQueryBuilder
+        .orderBy('accountTransaction.createdAt', 'DESC')
+        .getMany();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully',
+        accountTransactions,
       };
     } catch (error) {
       this.logger.error(error);

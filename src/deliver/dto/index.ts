@@ -14,3 +14,4 @@ export { UpdateIsActiveOfDriverDto } from './update-isActive-of-driver.dto';
 export { OrderHasBeenCompletedEventDto } from './order-has-been-completed-event.dto';
 export { OrderHasBeenAssignedToDriverEventDto } from './order-has-been-assigned-to-driver-event.dto';
 export { GetDriverStatisticDto } from './get-driver-statistic.dto';
+export { GetListDriverAccountTransactionDto } from './get-list-account-transaction.dto';
