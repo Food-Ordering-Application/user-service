@@ -46,6 +46,7 @@ import {
   IMerchantServiceResponse,
 } from './interfaces';
 import { ETrueFalse } from '../shared/enum';
+import { RestaurantUpdatedEventPayload } from './events/restaurant-updated.event';
 @Injectable()
 export class MerchantService {
   private readonly logger = new Logger('MerchantService');
@@ -165,6 +166,33 @@ export class MerchantService {
     });
     restaurantProfile.paymentInfo = this.createNewPayment();
     await this.restaurantProfileRepository.save(restaurantProfile);
+  }
+
+  async handleRestaurantUpdated(payload: RestaurantUpdatedEventPayload) {
+    const { merchantId, restaurantId, data } = payload;
+    const {
+      name,
+      phone,
+      coverImageUrl,
+      address,
+      isActive,
+      verifiedImageUrl,
+      videoUrl,
+    } = data;
+
+    this.restaurantProfileRepository.update(
+      { restaurantId },
+      {
+        name,
+        phone,
+        // coverImageUrl,
+        address,
+        isActive,
+        // verifiedImageUrl,
+        // videoUrl,
+        image: coverImageUrl,
+      },
+    );
   }
 
   createNewPayment(): PaymentInfo {

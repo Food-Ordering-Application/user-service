@@ -1,3 +1,4 @@
+import { RestaurantUpdatedEventPayload } from './events/restaurant-updated.event';
 import { Controller } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import {
@@ -49,6 +50,11 @@ export class MerchantController {
   @EventPattern({ event: 'restaurant_created' })
   async handleRestaurantCreated(data: RestaurantCreatedEventPayload) {
     return await this.merchantService.handleRestaurantCreated(data);
+  }
+
+  @EventPattern({ event: 'restaurant_updated' })
+  async handleRestaurantUpdated(data: RestaurantUpdatedEventPayload) {
+    return await this.merchantService.handleRestaurantUpdated(data);
   }
 
   @MessagePattern('fetchRestaurantProfiles')
