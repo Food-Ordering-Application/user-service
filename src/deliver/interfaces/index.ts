@@ -23,3 +23,5 @@ export { IDayStatisticData } from './day-statistic-data.interface';
 export { IDriverStatisticResponse } from './driver-statistic-response.interface';
 export { IDriverDailyStatisticResponse } from './driver-daily-statistic-response.interface';
 export { IDate } from './date.interface';
+export { IAccountTransactionsReponse } from './account-transactions-response.interface';
+export { IAccountTransaction } from './account-transaction.interface';

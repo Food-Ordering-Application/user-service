@@ -8,6 +8,7 @@ import {
   EventPaypalOrderOccurDto,
   GetDriverInformationDto,
   GetDriverStatisticDto,
+  GetListDriverAccountTransactionDto,
   GetListDriverTransactionHistoryDto,
   GetMainAccountWalletBalanceDto,
   OrderHasBeenAssignedToDriverEventDto,
@@ -18,6 +19,7 @@ import {
 } from './dto';
 import { CheckDriverAccountBalanceDto } from './dto/check-driver-account-balance.dto';
 import {
+  IAccountTransactionsReponse,
   IAccountWalletResponse,
   ICanDriverAcceptOrderResponse,
   IDepositMoneyIntoMainAccountWalletResponse,
@@ -120,6 +122,17 @@ export class DeliverController {
   ): Promise<IDriverTransactionsResponse> {
     return this.deliverService.getListDriverTransactionHistory(
       getListDriverTransactionHistoryDto,
+    );
+  }
+
+  //! Lấy danh sách lịch sử giao dịch trừ cộng tiền hệ thống của driver
+  @MessagePattern('getListAccountTransactionDriver')
+  async getListAccountTransactionDriver(
+    @Payload()
+    getListAccountTransactionDriverDto: GetListDriverAccountTransactionDto,
+  ): Promise<IAccountTransactionsReponse> {
+    return this.deliverService.getListAccountTransactionDriver(
+      getListAccountTransactionDriverDto,
     );
   }
 
