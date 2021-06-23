@@ -858,6 +858,9 @@ export class DeliverService {
         .take(size)
         .where('driver.id = :driverId', { driverId: driverId });
 
+      console.log('from', from);
+      console.log('to', to);
+
       if (from && to) {
         const fromDate = momenttimezone
           .tz(from, 'Asia/Ho_Chi_Minh')
