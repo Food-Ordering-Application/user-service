@@ -329,7 +329,14 @@ export class DeliverService {
         .where('driver.id = :driverId', { driverId: driverId })
         .getOne();
 
-      console.log('Driver', driver);
+      if (!driver) {
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message: 'DriverInfo not found',
+          driver: null,
+        };
+      }
+
       return {
         status: HttpStatus.OK,
         message: 'DriverInfo fetched successfully',
