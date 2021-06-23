@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
+import { Connection, Repository } from 'typeorm';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { Customer } from './entities/customer.entity';
 import { ICustomerResponse } from './interfaces/customer-response.interface';
@@ -85,6 +85,8 @@ export class CustomerService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerAddress)
     private customerAddressRepository: Repository<CustomerAddress>,
+    @InjectConnection()
+    private connection: Connection,
   ) {}
 
   async create(
@@ -259,12 +261,8 @@ export class CustomerService {
     createCustomerAddressDto: CreateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const {
-        address,
-        customerId,
-        latitude,
-        longtitude,
-      } = createCustomerAddressDto;
+      const { address, customerId, latitude, longtitude } =
+        createCustomerAddressDto;
 
       // Tìm ra customer với customerId
       const customer = await this.customerRepository
@@ -306,13 +304,8 @@ export class CustomerService {
     updateCustomerAddressDto: UpdateCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
     try {
-      const {
-        address,
-        customerId,
-        latitude,
-        longtitude,
-        customerAddressId,
-      } = updateCustomerAddressDto;
+      const { address, customerId, latitude, longtitude, customerAddressId } =
+        updateCustomerAddressDto;
 
       // Tìm ra customer address và update
       const customerAddress = await this.customerAddressRepository
@@ -503,31 +496,42 @@ export class CustomerService {
   async updateDefaultCustomerAddress(
     updateDefaultCustomerAddressDto: UpdateDefaultCustomerAddressDto,
   ): Promise<ICustomerAddressResponse> {
+    let queryRunner;
     try {
+      queryRunner = this.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
       const { customerId, customerAddressId } = updateDefaultCustomerAddressDto;
       //TODO: Tìm ra customerAddress có default = true đổi lại thành false
-      const oldDefaultCustomerAddress = await this.customerAddressRepository
-        .createQueryBuilder('cAddress')
-        .leftJoin('cAddress.customer', 'customer')
-        .where('customer.id = :customerId', {
-          customerId: customerId,
-        })
-        .andWhere('cAddress.default = :addressDefault', {
-          addressDefault: true,
-        })
-        .getOne();
+      const [oldDefaultCustomerAddress, newDefaultCustomerAddress] =
+        await Promise.all([
+          queryRunner.manager
+            .getRepository(CustomerAddress)
+            .createQueryBuilder('cAddress')
+            .leftJoin('cAddress.customer', 'customer')
+            .where('customer.id = :customerId', {
+              customerId: customerId,
+            })
+            .andWhere('cAddress.default = :addressDefault', {
+              addressDefault: true,
+            })
+            .getOne(),
+          queryRunner.manager
+            .getRepository(CustomerAddress)
+            .createQueryBuilder('cAddress')
+            .where('cAddress.id = :customerAddressId', {
+              customerAddressId: customerAddressId,
+            })
+            .getOne(),
+        ]);
       oldDefaultCustomerAddress.default = false;
-      await this.customerAddressRepository.save(oldDefaultCustomerAddress);
-      //TODO: Update customerAddressId mới thành default
-      const newDefaultCustomerAddress = await this.customerAddressRepository
-        .createQueryBuilder('cAddress')
-        .where('cAddress.id = :customerAddressId', {
-          customerAddressId: customerAddressId,
-        })
-        .getOne();
       newDefaultCustomerAddress.default = true;
-      await this.customerAddressRepository.save(newDefaultCustomerAddress);
 
+      await Promise.all([
+        queryRunner.manager.save(CustomerAddress, oldDefaultCustomerAddress),
+        queryRunner.manager.save(CustomerAddress, newDefaultCustomerAddress),
+      ]);
+      await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
         message: 'Default customer address updated successfully',
@@ -535,11 +539,14 @@ export class CustomerService {
       };
     } catch (error) {
       this.logger.error(error);
+      await queryRunner.rollbackTransaction();
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
         address: null,
       };
+    } finally {
+      await queryRunner.release();
     }
   }
 
