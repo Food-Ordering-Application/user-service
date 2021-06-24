@@ -495,34 +495,36 @@ export class CustomerService {
       await queryRunner.startTransaction();
       const { customerId, customerAddressId } = updateDefaultCustomerAddressDto;
       //TODO: Tìm ra customerAddress có default = true đổi lại thành false
-      const [oldDefaultCustomerAddress, newDefaultCustomerAddress] =
-        await Promise.all([
-          queryRunner.manager
-            .getRepository(CustomerAddress)
-            .createQueryBuilder('cAddress')
-            .leftJoin('cAddress.customer', 'customer')
-            .where('customer.id = :customerId', {
-              customerId: customerId,
-            })
-            .andWhere('cAddress.default = :addressDefault', {
-              addressDefault: true,
-            })
-            .getOne(),
-          queryRunner.manager
-            .getRepository(CustomerAddress)
-            .createQueryBuilder('cAddress')
-            .where('cAddress.id = :customerAddressId', {
-              customerAddressId: customerAddressId,
-            })
-            .getOne(),
-        ]);
+      const oldDefaultCustomerAddress = await queryRunner.manager
+        .getRepository(CustomerAddress)
+        .createQueryBuilder('cAddress')
+        .leftJoin('cAddress.customer', 'customer')
+        .where('customer.id = :customerId', {
+          customerId: customerId,
+        })
+        .andWhere('cAddress.default = :addressDefault', {
+          addressDefault: true,
+        })
+        .getOne();
       oldDefaultCustomerAddress.default = false;
+      await queryRunner.manager.save(
+        CustomerAddress,
+        oldDefaultCustomerAddress,
+      );
+      const newDefaultCustomerAddress = await queryRunner.manager
+        .getRepository(CustomerAddress)
+        .createQueryBuilder('cAddress')
+        .where('cAddress.id = :customerAddressId', {
+          customerAddressId: customerAddressId,
+        })
+        .getOne();
+
       newDefaultCustomerAddress.default = true;
 
-      await Promise.all([
-        queryRunner.manager.save(CustomerAddress, oldDefaultCustomerAddress),
-        queryRunner.manager.save(CustomerAddress, newDefaultCustomerAddress),
-      ]);
+      await queryRunner.manager.save(
+        CustomerAddress,
+        newDefaultCustomerAddress,
+      );
       await queryRunner.commitTransaction();
       return {
         status: HttpStatus.OK,
