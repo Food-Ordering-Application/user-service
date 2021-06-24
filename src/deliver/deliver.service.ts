@@ -894,6 +894,7 @@ export class DeliverService {
       }
 
       if (query === EDriverTransactionType.PAYIN) {
+        console.log('query = PAYIN');
         driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
           'driverTransaction.type = :driverTransactionType',
           {
@@ -914,6 +915,7 @@ export class DeliverService {
             );
         }
       } else if (query === EDriverTransactionType.WITHDRAW) {
+        console.log('query = WITHDRAW');
         driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
           'driverTransaction.type = :driverTransactionType',
           {
@@ -934,10 +936,12 @@ export class DeliverService {
             );
         }
       } else {
+        console.log('query = ALL');
         if (
           transactionStatus !== EGeneralTransactionStatus.ALL &&
           !transactionStatus
         ) {
+          console.log('HAVE TRANSACTION STATUS');
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'withdrawTransaction.status = :status OR payinTransaction.status = :status',
@@ -951,6 +955,8 @@ export class DeliverService {
       const driverTransactions = await driverTransactionQueryBuilder
         .orderBy('driverTransaction.createdAt', 'DESC')
         .getMany();
+
+      console.log('Driver transactions', driverTransactions);
 
       return {
         status: HttpStatus.OK,
