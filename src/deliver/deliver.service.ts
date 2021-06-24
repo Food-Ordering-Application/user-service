@@ -904,7 +904,7 @@ export class DeliverService {
 
         if (
           transactionStatus !== EGeneralTransactionStatus.ALL &&
-          !transactionStatus
+          transactionStatus
         ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
@@ -925,7 +925,7 @@ export class DeliverService {
 
         if (
           transactionStatus !== EGeneralTransactionStatus.ALL &&
-          !transactionStatus
+          transactionStatus
         ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
@@ -937,9 +937,10 @@ export class DeliverService {
         }
       } else {
         console.log('query = ALL');
+        console.log('TransactionStatus', transactionStatus);
         if (
           transactionStatus !== EGeneralTransactionStatus.ALL &&
-          !transactionStatus
+          transactionStatus
         ) {
           console.log('HAVE TRANSACTION STATUS');
           driverTransactionQueryBuilder =
