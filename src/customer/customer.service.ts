@@ -526,6 +526,7 @@ export class CustomerService {
         newDefaultCustomerAddress,
       );
       await queryRunner.commitTransaction();
+      console.log('Commit');
       return {
         status: HttpStatus.OK,
         message: 'Default customer address updated successfully',
