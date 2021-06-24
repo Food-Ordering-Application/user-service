@@ -898,7 +898,10 @@ export class DeliverService {
           },
         );
 
-        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+        if (
+          transactionStatus !== EGeneralTransactionStatus.ALL &&
+          !transactionStatus
+        ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'payinTransaction.status = :payinTransactionStatus',
@@ -915,7 +918,10 @@ export class DeliverService {
           },
         );
 
-        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+        if (
+          transactionStatus !== EGeneralTransactionStatus.ALL &&
+          !transactionStatus
+        ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'withdrawTransaction.status = :withdrawTransactionStatus',
@@ -925,7 +931,10 @@ export class DeliverService {
             );
         }
       } else {
-        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+        if (
+          transactionStatus !== EGeneralTransactionStatus.ALL &&
+          !transactionStatus
+        ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'withdrawTransaction.status = :status OR payinTransaction.status = :status',
