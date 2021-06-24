@@ -868,6 +868,9 @@ export class DeliverService {
         .take(size)
         .where('driver.id = :driverId', { driverId: driverId });
 
+      const test = await driverTransactionQueryBuilder.getMany();
+      console.log('test', test);
+
       console.log('from', from);
       console.log('to', to);
 
