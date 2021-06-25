@@ -1,4 +1,4 @@
 export enum FeedbackType {
-  Restaurant = 1,
-  Driver = 2,
+  Restaurant = 2,
+  Driver = 1,
 }
