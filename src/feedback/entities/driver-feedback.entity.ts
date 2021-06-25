@@ -3,8 +3,11 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { FeedbackReason } from '.';
 import { Rating } from '../enums';
 
 @Entity()
@@ -32,4 +35,10 @@ export class DriverFeedback {
   @CreateDateColumn()
   @Index()
   createdAt: Date;
+
+  @ManyToMany(() => FeedbackReason, (reason) => reason.driverFeedbacks)
+  @JoinTable({
+    name: 'driver_feedback_reasons',
+  })
+  reasons: FeedbackReason[];
 }

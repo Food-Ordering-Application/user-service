@@ -3,10 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
-  Unique,
 } from 'typeorm';
 import { Rating } from '../enums';
+import { FeedbackReason } from './feedback-reason.entity';
 
 @Entity()
 export class RestaurantFeedback {
@@ -33,4 +35,10 @@ export class RestaurantFeedback {
   @CreateDateColumn()
   @Index()
   createdAt: Date;
+
+  @ManyToMany(() => FeedbackReason, (reason) => reason.restaurantFeedbacks)
+  @JoinTable({
+    name: 'restaurant_feedback_reasons',
+  })
+  reasons: FeedbackReason[];
 }

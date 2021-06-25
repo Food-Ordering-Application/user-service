@@ -1,5 +1,13 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { RestaurantFeedback } from './restaurant-feedback.entity';
+import {
+  Column,
+  Entity,
+  Index,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { FeedbackType } from '../enums';
+import { DriverFeedback } from '.';
 
 @Entity()
 export class FeedbackReason {
@@ -15,4 +23,10 @@ export class FeedbackReason {
 
   @Column({ nullable: false })
   displayOrder: number;
+
+  @ManyToMany(() => RestaurantFeedback, (feedback) => feedback.reasons)
+  restaurantFeedbacks: RestaurantFeedback;
+
+  @ManyToMany(() => DriverFeedback, (feedback) => feedback.reasons)
+  driverFeedbacks: RestaurantFeedback;
 }
