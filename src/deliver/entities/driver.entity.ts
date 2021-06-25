@@ -51,6 +51,9 @@ export class Driver {
   @Column({ default: false })
   isActive?: boolean;
 
+  @Column({ default: null })
+  rating: number;
+
   //? Relation
   @OneToOne(() => AccountWallet, (wallet) => wallet.driver)
   @JoinColumn()
