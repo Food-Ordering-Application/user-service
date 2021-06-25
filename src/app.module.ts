@@ -1,3 +1,4 @@
+import { FeedbackModule } from './feedback/feedback.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
@@ -27,6 +28,7 @@ import * as Joi from 'joi';
     MerchantModule,
     DeliverModule,
     StaffModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [AppService],
