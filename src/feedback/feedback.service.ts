@@ -64,7 +64,7 @@ export class FeedbackService {
           where: {
             id: In(reasonIds),
             type: FeedbackType.Restaurant,
-            // add rate
+            rate,
           },
         });
 
