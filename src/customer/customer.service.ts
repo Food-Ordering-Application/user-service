@@ -179,7 +179,6 @@ export class CustomerService {
     sendPhoneNumberOTPVerifyDto: SendPhoneNumberOTPVerifyDto,
   ): Promise<ICustomerSendOTPVerifyResponse> {
     try {
-      console.log('Here');
       let { phoneNumber } = sendPhoneNumberOTPVerifyDto;
       const { recaptchaToken } = sendPhoneNumberOTPVerifyDto;
       console.log(phoneNumber, recaptchaToken);
@@ -570,7 +569,6 @@ export class CustomerService {
         Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION;
       await this.customerRepository.save(customer);
 
-      console.log(resetToken);
       console.log(resetToken);
       console.log(Date.now() + RESET_PASSWORD_TIMEOUT_EXPIRATION);
       //TODO: Gửi email cho customer đó

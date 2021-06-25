@@ -21,23 +21,6 @@ import { MerchantService } from './merchant.service';
       PaymentInfo,
       PayPalPayment,
     ]),
-    ClientsModule.registerAsync([
-      {
-        name: RESTAURANT_SERVICE,
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [configService.get('AMQP_URL') as string],
-            queue: configService.get('RESTAURANT_AMQP_QUEUE'),
-            queueOptions: {
-              durable: false,
-            },
-          },
-        }),
-      },
-    ]),
   ],
   controllers: [MerchantController],
   providers: [MerchantService],

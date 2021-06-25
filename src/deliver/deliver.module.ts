@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { DeliverService } from './deliver.service';
-import { DeliverController } from './deliver.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PaymentInfo, PayPalPayment } from '../merchant/entities';
+import { DeliverController } from './deliver.controller';
+import { DeliverService } from './deliver.service';
 import {
   AccountTransaction,
   AccountWallet,
@@ -12,14 +13,6 @@ import {
   PayinTransaction,
   WithdrawTransaction,
 } from './entities';
-import { PaymentInfo, PayPalPayment } from '../merchant/entities';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import {
-  NOTIFICATION_SERVICE,
-  ORDER_SERVICE,
-  USER_SERVICE,
-} from '../constants';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -34,38 +27,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       DriverTransaction,
       PayinTransaction,
       WithdrawTransaction,
-    ]),
-    ClientsModule.registerAsync([
-      {
-        name: NOTIFICATION_SERVICE,
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [configService.get('AMQP_URL') as string],
-            queue: configService.get('NOTIFICATION_AMQP_QUEUE'),
-            queueOptions: {
-              durable: false,
-            },
-          },
-        }),
-      },
-      {
-        name: ORDER_SERVICE,
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [configService.get('AMQP_URL') as string],
-            queue: configService.get('ORDER_AMQP_QUEUE'),
-            queueOptions: {
-              durable: false,
-            },
-          },
-        }),
-      },
     ]),
   ],
   controllers: [DeliverController],

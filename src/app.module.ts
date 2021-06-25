@@ -1,3 +1,4 @@
+import { MicroserviceModule } from './microservice/microservice.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -22,6 +23,7 @@ import * as Joi from 'joi';
         POSTGRES_DB: Joi.string().required(),
       }),
     }),
+    MicroserviceModule,
     DatabaseModule,
     CustomerModule,
     AdminModule,

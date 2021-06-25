@@ -8,7 +8,7 @@ interface Context {
 
 define(Driver, (faker: typeof Faker, context: Context) => {
   const id = faker.random.uuid();
-  console.log(context);
+  // console.log(context);
   let phoneNumber;
   if (context) {
     phoneNumber = context.phoneNumber;
