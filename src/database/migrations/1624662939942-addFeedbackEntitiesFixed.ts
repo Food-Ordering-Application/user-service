@@ -1,13 +1,13 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class addFeedbackEntitiesFixed1624625819172
+export class addFeedbackEntitiesFixed1624662939942
   implements MigrationInterface
 {
-  name = 'addFeedbackEntitiesFixed1624625819172';
+  name = 'addFeedbackEntitiesFixed1624662939942';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TABLE "feedback_reason" ("id" SERIAL NOT NULL, "content" character varying NOT NULL, "type" integer NOT NULL, "displayOrder" integer NOT NULL, CONSTRAINT "PK_73ca2a6f14c14437480547aca71" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "feedback_reason" ("id" int4 NOT NULL, "content" character varying NOT NULL, "type" integer NOT NULL, "displayOrder" integer NOT NULL, "rate" integer NOT NULL, CONSTRAINT "PK_73ca2a6f14c14437480547aca71" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE INDEX "IDX_37b6cc1efcb5793567e26d5d42" ON "feedback_reason" ("type") `,
@@ -55,7 +55,6 @@ export class addFeedbackEntitiesFixed1624625819172
       `CREATE INDEX "IDX_f0c80bd2bd0ec39494434cf497" ON "driver_feedback_reasons" ("feedbackReasonId") `,
     );
     await queryRunner.query(`ALTER TABLE "driver" ADD "rating" integer`);
-
     await queryRunner.query(
       `ALTER TABLE "restaurant_feedback_reasons" ADD CONSTRAINT "FK_ec9a98ebac03e0624cccaf1404b" FOREIGN KEY ("restaurantFeedbackId") REFERENCES "restaurant_feedback"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );

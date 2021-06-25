@@ -11,12 +11,13 @@ interface JSONModel {
   rate: number;
 }
 const converter = (data: JSONModel): Partial<FeedbackReason> => {
-  const { id, type, content, display_order } = data;
+  const { id, type, content, display_order, rate } = data;
   return {
     id,
     type,
     content,
     displayOrder: display_order,
+    rate,
   };
 };
 
