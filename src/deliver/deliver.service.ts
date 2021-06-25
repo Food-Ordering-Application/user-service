@@ -65,7 +65,7 @@ import * as momenttimezone from 'moment-timezone';
 import * as moment from 'moment';
 
 const DEFAULT_EXCHANGE_RATE = 0.00004;
-const COMMISSION_FEE_PERCENT = 0.2;
+const COMMISSION_FEE_PERCENT = 0.05;
 const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
 const MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW = 300000;
 
@@ -891,6 +891,7 @@ export class DeliverService {
       }
 
       if (query === EDriverTransactionType.PAYIN) {
+        console.log('query = PAYIN');
         driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
           'driverTransaction.type = :driverTransactionType',
           {
@@ -898,7 +899,10 @@ export class DeliverService {
           },
         );
 
-        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+        if (
+          transactionStatus !== EGeneralTransactionStatus.ALL &&
+          transactionStatus
+        ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'payinTransaction.status = :payinTransactionStatus',
@@ -908,6 +912,7 @@ export class DeliverService {
             );
         }
       } else if (query === EDriverTransactionType.WITHDRAW) {
+        console.log('query = WITHDRAW');
         driverTransactionQueryBuilder = driverTransactionQueryBuilder.andWhere(
           'driverTransaction.type = :driverTransactionType',
           {
@@ -915,7 +920,10 @@ export class DeliverService {
           },
         );
 
-        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+        if (
+          transactionStatus !== EGeneralTransactionStatus.ALL &&
+          transactionStatus
+        ) {
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'withdrawTransaction.status = :withdrawTransactionStatus',
@@ -925,7 +933,13 @@ export class DeliverService {
             );
         }
       } else {
-        if (transactionStatus !== EGeneralTransactionStatus.ALL) {
+        console.log('query = ALL');
+        console.log('TransactionStatus', transactionStatus);
+        if (
+          transactionStatus !== EGeneralTransactionStatus.ALL &&
+          transactionStatus
+        ) {
+          console.log('HAVE TRANSACTION STATUS');
           driverTransactionQueryBuilder =
             driverTransactionQueryBuilder.andWhere(
               'withdrawTransaction.status = :status OR payinTransaction.status = :status',
@@ -939,6 +953,8 @@ export class DeliverService {
       const driverTransactions = await driverTransactionQueryBuilder
         .orderBy('driverTransaction.createdAt', 'DESC')
         .getMany();
+
+      console.log('Driver transactions', driverTransactions);
 
       return {
         status: HttpStatus.OK,
@@ -1228,18 +1244,23 @@ export class DeliverService {
         shippingFee,
       } = orderHasBeenCompletedEventDto;
 
-      // console.dir(order, { depth: 4 });
+      console.log('deliveryDistance', deliveryDistance);
+      console.log('deliveryId', deliveryId);
+      console.log('driverId', driverId);
+      console.log('orderGrandTotal', orderGrandTotal);
+      console.log('orderId', orderId);
+      console.log('paymentMethod', paymentMethod);
+      console.log('shippingFee', shippingFee);
 
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      const promises: (() => Promise<any>)[] = [];
-
       //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
       if (paymentMethod === EPaymentMethod.PAYPAL) {
         const moneyToAdd = orderGrandTotal;
         console.log('MoneyToAdd', moneyToAdd);
+        console.log('PAYPALPAYMENT');
 
         const accountWallet = await queryRunner.manager
           .getRepository(AccountWallet)
@@ -1256,15 +1277,13 @@ export class DeliverService {
           operationType: EOperationType.SYSTEM_ADD,
           accountBalance: accountWallet.mainBalance,
         });
-        const updateAccountTransaction = () =>
-          queryRunner.manager.save(AccountTransaction, accountTransaction);
 
         accountWallet.mainBalance += moneyToAdd;
-        const updateAccountWallet = () =>
-          queryRunner.manager.save(AccountWallet, accountWallet);
 
-        promises.push(updateAccountTransaction);
-        promises.push(updateAccountWallet);
+        await Promise.all([
+          queryRunner.manager.save(AccountWallet, accountWallet),
+          queryRunner.manager.save(AccountTransaction, accountTransaction),
+        ]);
       }
 
       const deliveryHistory = this.deliveryHistoryRepository.create({
@@ -1276,12 +1295,7 @@ export class DeliverService {
         commissionFee: shippingFee * COMMISSION_FEE_PERCENT,
         income: shippingFee * (1 - COMMISSION_FEE_PERCENT),
       });
-      const createDeliveryHistory = () =>
-        queryRunner.manager.save(DeliveryHistory, deliveryHistory);
-
-      promises.push(createDeliveryHistory);
-
-      await Promise.all(promises.map((callback) => callback()));
+      await queryRunner.manager.save(DeliveryHistory, deliveryHistory);
       await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);
