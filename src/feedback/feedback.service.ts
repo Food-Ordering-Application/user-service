@@ -1,3 +1,4 @@
+import { RestaurantFeedbackDto } from './dto/restaurant-feedback.dto';
 import {
   HttpStatus,
   Inject,
@@ -11,7 +12,7 @@ import { throwError, TimeoutError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { ORDER_SERVICE, RESTAURANT_SERVICE } from 'src/constants';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
-import { RatingRestaurantDto } from './dto';
+import { GetFeedbackOfOrdersDto, RatingRestaurantDto } from './dto';
 import { DriverFeedback } from './entities/driver-feedback.entity';
 import { FeedbackReason } from './entities/feedback-reason.entity';
 import { RestaurantFeedback } from './entities/restaurant-feedback.entity';
@@ -19,6 +20,7 @@ import { FeedbackType } from './enums';
 import {
   IRatingRestaurantResponse,
   IOrderServiceGetRateInfosResponse,
+  IGetFeedbackOfOrders,
 } from './interfaces';
 
 const PG_UNIQUE_CONSTRAINT_VIOLATION = '23505';
@@ -185,5 +187,27 @@ export class FeedbackService {
         `Update restaurant ${restaurantId} rating failed! ${e.message}`,
       );
     }
+  }
+
+  async getFeedbackOfOrder(
+    getFeedbackOfOrderDto: GetFeedbackOfOrdersDto,
+  ): Promise<IGetFeedbackOfOrders> {
+    const { orderIds } = getFeedbackOfOrderDto;
+    const restaurantFeedbacks = await this.restaurantFeedbackRepository.find({
+      id: In(orderIds),
+    });
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Get restaurant feedback of orders successfully',
+      data: {
+        feedbacks: orderIds.map((orderId) => {
+          const restaurantFeedback = restaurantFeedbacks.find(
+            ({ id }) => id == orderId,
+          );
+          return RestaurantFeedbackDto.EntityToDto(restaurantFeedback);
+        }),
+      },
+    };
   }
 }
