@@ -1,3 +1,4 @@
+import { DeliverModule } from './../deliver/deliver.module';
 import { FeedbackController } from './feedback.controller';
 import { DriverFeedback } from './entities/driver-feedback.entity';
 import { RestaurantFeedback } from './entities/restaurant-feedback.entity';
@@ -11,6 +12,7 @@ import { Module } from '@nestjs/common';
 
 @Module({
   imports: [
+    DeliverModule,
     TypeOrmModule.forFeature([
       FeedbackReason,
       RestaurantFeedback,

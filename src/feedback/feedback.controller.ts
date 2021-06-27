@@ -1,7 +1,11 @@
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Controller } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
-import { GetFeedbackOfOrdersDto, RatingRestaurantDto } from './dto';
+import {
+  GetFeedbackOfOrdersDto,
+  RatingDriverDto,
+  RatingRestaurantDto,
+} from './dto';
 
 @Controller()
 export class FeedbackController {
@@ -13,6 +17,14 @@ export class FeedbackController {
     RatingRestaurantDto: RatingRestaurantDto,
   ) {
     return this.feedbackService.ratingRestaurant(RatingRestaurantDto);
+  }
+
+  @MessagePattern('ratingDriver')
+  ratingDriver(
+    @Payload()
+    ratingDriverDto: RatingDriverDto,
+  ) {
+    return this.feedbackService.ratingDriver(ratingDriverDto);
   }
 
   @MessagePattern('getFeedbackOfOrders')

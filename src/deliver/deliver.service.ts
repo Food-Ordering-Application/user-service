@@ -1782,4 +1782,12 @@ export class DeliverService {
       }
     }
   }
+
+  async updateDriverRating(driverId: string, { rating }: { rating: number }) {
+    const { affected } = await this.driverRepository.update(
+      { id: driverId },
+      { rating: rating },
+    );
+    return affected > 0;
+  }
 }
