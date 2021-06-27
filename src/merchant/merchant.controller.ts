@@ -13,6 +13,8 @@ import {
   GetPayPalOnboardStatusDto,
   UpdateIsAutoConfirmOrderDto,
   GetIsAutoConfirmOrderDto,
+  GeneratePosKeyDto,
+  RemovePosDeviceDto,
 } from './dto';
 import { RestaurantCreatedEventPayload } from './events/restaurant-created.event';
 import {
@@ -71,6 +73,20 @@ export class MerchantController {
     @Payload() verifyRestaurantDto: VerifyRestaurantDto,
   ): Promise<IMerchantServiceResponse> {
     return await this.merchantService.verifyRestaurant(verifyRestaurantDto);
+  }
+
+  @MessagePattern('generatePosAppKey')
+  async generatePosAppKey(
+    @Payload() generatePosKeyDto: GeneratePosKeyDto,
+  ): Promise<IMerchantServiceResponse> {
+    return await this.merchantService.generatePosAppKey(generatePosKeyDto);
+  }
+
+  @MessagePattern('removePosDevice')
+  async removePosDevice(
+    @Payload() removePosDeviceDto: RemovePosDeviceDto,
+  ): Promise<IMerchantServiceResponse> {
+    return await this.merchantService.removePosDevice(removePosDeviceDto);
   }
 
   @MessagePattern('verifyPosAppKey')

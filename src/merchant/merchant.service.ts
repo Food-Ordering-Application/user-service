@@ -16,11 +16,13 @@ import {
   CreateMerchantDto,
   FetchPaymentDto,
   FetchRestaurantProfilesDto,
+  GeneratePosKeyDto,
   GetIsAutoConfirmOrderDto,
   GetPayPalOnboardStatusDto,
   GetPayPalSignUpLinkDto,
   MerchantDto,
   PaymentDto,
+  RemovePosDeviceDto,
   RestaurantProfileDto,
   UpdateIsAutoConfirmOrderDto,
   VerifyPosAppKeyDto,
@@ -217,8 +219,6 @@ export class MerchantService {
       };
 
     restaurantProfile.isVerified = true;
-    await this.getVerifiedRestaurantProfile(restaurantProfile);
-
     const restaurantProfileUpdatedEventPayload: RestaurantProfileUpdatedEventPayload =
       {
         restaurantId,
@@ -226,6 +226,8 @@ export class MerchantService {
           isVerified: true,
         },
       };
+
+    await this.restaurantProfileRepository.save(restaurantProfile);
     this.restaurantServiceClient.emit(
       { event: 'restaurant_profile_updated' },
       restaurantProfileUpdatedEventPayload,
@@ -234,10 +236,40 @@ export class MerchantService {
     return {
       status: HttpStatus.OK,
       message: 'Verify restaurant successfully',
-      data: {
-        posAppKey: restaurantProfile.posAppKey,
-      },
+      data: {},
     };
+  }
+
+  async generatePosAppKey(
+    generatePosKeyDto: GeneratePosKeyDto,
+  ): Promise<IMerchantServiceResponse> {
+    const { restaurantId } = generatePosKeyDto;
+    const restaurantProfile = await this.restaurantProfileRepository.findOne({
+      restaurantId,
+    });
+
+    if (!restaurantProfile)
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'RestaurantId was not found',
+        data: null,
+      };
+    try {
+      await this.getVerifiedRestaurantProfile(restaurantProfile);
+      return {
+        status: HttpStatus.OK,
+        message: 'Generate POS app key for restaurant successfully',
+        data: {
+          posAppKey: restaurantProfile.posAppKey,
+        },
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e.message,
+        data: {},
+      };
+    }
   }
 
   async verifyPosAppKey(
@@ -277,15 +309,53 @@ export class MerchantService {
     };
   }
 
+  async removePosDevice(
+    removePosDeviceDto: RemovePosDeviceDto,
+  ): Promise<IMerchantServiceResponse> {
+    const { restaurantId } = removePosDeviceDto;
+    const restaurantProfile = await this.restaurantProfileRepository.findOne({
+      restaurantId,
+    });
+
+    if (!restaurantProfile)
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Restaurant was not found',
+        data: null,
+      };
+
+    try {
+      await this.restaurantProfileRepository.update(restaurantProfile, {
+        deviceId: null,
+      });
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Remove POS device successfully',
+        data: {},
+      };
+    } catch (e) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: e.message,
+        data: {},
+      };
+    }
+  }
+
   private async getVerifiedRestaurantProfile(
     restaurantProfile: RestaurantProfile,
+    count = 0,
   ) {
     const getRandom = () => randomBytes(2).toString('hex').toUpperCase();
     restaurantProfile.posAppKey = `${getRandom()}-${getRandom()}-${getRandom()}`;
     try {
       await this.restaurantProfileRepository.save(restaurantProfile);
     } catch (e) {
-      this.getVerifiedRestaurantProfile(restaurantProfile);
+      if (count > 5) {
+        throw new Error('Cannot generate random key');
+      }
+      this.getVerifiedRestaurantProfile(restaurantProfile, count + 1);
     }
   }
 
@@ -348,6 +418,7 @@ export class MerchantService {
       await this.restaurantProfileRepository.findAndCount({
         take: size,
         skip: page * size,
+        order: { contractId: 'DESC' },
       });
 
     return {

@@ -1,4 +1,3 @@
-import { Merchant } from '../entities/merchant.entity';
 import { RestaurantProfile } from '../entities/restaurant-profile.entity';
 
 export class RestaurantProfileDto {
@@ -15,6 +14,7 @@ export class RestaurantProfileDto {
   contractId: number;
   isActive: boolean;
   isVerified: boolean;
+  hasDevice: boolean;
   static EntityToDTO(restaurant: RestaurantProfile): RestaurantProfileDto {
     const {
       restaurantId,
@@ -30,6 +30,7 @@ export class RestaurantProfileDto {
       contractId,
       isActive,
       isVerified,
+      deviceId,
     } = restaurant;
     return {
       restaurantId,
@@ -45,6 +46,7 @@ export class RestaurantProfileDto {
       contractId,
       isActive,
       isVerified,
+      hasDevice: deviceId == null ? false : true,
     };
   }
 }
