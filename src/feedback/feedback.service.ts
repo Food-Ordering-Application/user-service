@@ -202,19 +202,22 @@ export class FeedbackService {
   ): Promise<IGetFeedbackOfOrders> {
     const { orderIds } = getFeedbackOfOrderDto;
     const restaurantFeedbacks = await this.restaurantFeedbackRepository.find({
-      id: In(orderIds),
+      where: {
+        orderId: In(orderIds),
+      },
+    });
+    const feedbacks = orderIds.map((orderId) => {
+      const restaurantFeedback = restaurantFeedbacks.find(
+        ({ orderId: rateOrderId }) => rateOrderId == orderId,
+      );
+      return RestaurantFeedbackDto.EntityToDto(restaurantFeedback);
     });
 
     return {
       status: HttpStatus.OK,
       message: 'Get restaurant feedback of orders successfully',
       data: {
-        feedbacks: orderIds.map((orderId) => {
-          const restaurantFeedback = restaurantFeedbacks.find(
-            ({ id }) => id == orderId,
-          );
-          return RestaurantFeedbackDto.EntityToDto(restaurantFeedback);
-        }),
+        feedbacks,
       },
     };
   }
