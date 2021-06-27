@@ -8,7 +8,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { validateHashedPassword } from '../shared/helper';
 import { RESTAURANT_SERVICE } from '../constants';
 import {
@@ -412,12 +412,21 @@ export class MerchantService {
   async fetchRestaurantProfiles(
     fetchRestaurantsOfMerchantDto: FetchRestaurantProfilesDto,
   ): Promise<IMerchantServiceFetchRestaurantProfilesResponse> {
-    const { size, page } = fetchRestaurantsOfMerchantDto;
-
+    const { size, page, query = '' } = fetchRestaurantsOfMerchantDto;
+    const queryString = query.toLowerCase();
     const [results, total] =
       await this.restaurantProfileRepository.findAndCount({
+        where: queryString.length
+          ? [
+              {
+                name: ILike(`%${queryString}%`),
+              },
+              { address: ILike(`%${queryString}%`) },
+            ]
+          : null,
         take: size,
         skip: page * size,
+        relations: ['merchant'],
         order: { contractId: 'DESC' },
       });
 

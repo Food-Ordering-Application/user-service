@@ -1,3 +1,4 @@
+import { MerchantDto } from './merchant.dto';
 import { RestaurantProfile } from '../entities/restaurant-profile.entity';
 
 export class RestaurantProfileDto {
@@ -15,6 +16,7 @@ export class RestaurantProfileDto {
   isActive: boolean;
   isVerified: boolean;
   hasDevice: boolean;
+  merchant: MerchantDto;
   static EntityToDTO(restaurant: RestaurantProfile): RestaurantProfileDto {
     const {
       restaurantId,
@@ -31,6 +33,7 @@ export class RestaurantProfileDto {
       isActive,
       isVerified,
       deviceId,
+      merchant,
     } = restaurant;
     return {
       restaurantId,
@@ -47,6 +50,7 @@ export class RestaurantProfileDto {
       isActive,
       isVerified,
       hasDevice: deviceId == null ? false : true,
+      merchant: MerchantDto.EntityToDTO(merchant),
     };
   }
 }
