@@ -1006,9 +1006,6 @@ export class DeliverService {
         .take(size)
         .where('driver.id = :driverId', { driverId: driverId });
 
-      console.log('from', from);
-      console.log('to', to);
-
       if (from && to) {
         const fromDate = momenttimezone
           .tz(from, 'Asia/Ho_Chi_Minh')
@@ -1028,7 +1025,7 @@ export class DeliverService {
           });
       }
 
-      if (query === EAccountTransaction.SYSTEMADD) {
+      if (query === EOperationType.SYSTEM_ADD) {
         accountTransactionQueryBuilder =
           accountTransactionQueryBuilder.andWhere(
             'accountTransaction.operationType = :accountTransactionType',
@@ -1036,7 +1033,7 @@ export class DeliverService {
               accountTransactionType: EOperationType.SYSTEM_ADD,
             },
           );
-      } else if (query === EAccountTransaction.SYSTEMDEDUCT) {
+      } else if (query === EOperationType.SYSTEM_DEDUCT) {
         accountTransactionQueryBuilder =
           accountTransactionQueryBuilder.andWhere(
             'accountTransaction.operationType = :accountTransactionType',
