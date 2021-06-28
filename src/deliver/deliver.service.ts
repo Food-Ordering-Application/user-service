@@ -1271,12 +1271,17 @@ export class DeliverService {
           .getOne();
 
         //TODO: Tạo đối tượng accountTransaction type = SYSTEM_ADD
-        const accountTransaction = this.accountTransactionRepository.create({
-          amount: moneyToAdd,
-          driverId: driverId,
-          operationType: EOperationType.SYSTEM_ADD,
-          accountBalance: accountWallet.mainBalance,
-        });
+        // const accountTransaction = this.accountTransactionRepository.create({
+        //   amount: moneyToAdd,
+        //   driverId: driverId,
+        //   operationType: EOperationType.SYSTEM_ADD,
+        //   accountBalance: accountWallet.mainBalance,
+        // });
+        const accountTransaction = new AccountTransaction();
+        accountTransaction.amount = moneyToAdd;
+        accountTransaction.driverId = driverId;
+        accountTransaction.operationType = EOperationType.SYSTEM_ADD;
+        accountTransaction.accountBalance = accountWallet.mainBalance;
 
         accountWallet.mainBalance += moneyToAdd;
 
