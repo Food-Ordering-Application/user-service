@@ -18,7 +18,7 @@ export class AccountTransaction {
   accountBalance: number;
   @Column({ enum: EOperationType })
   operationType: string;
-  @Column({ enum: EPaymentMethod })
+  @Column({ enum: EPaymentMethod, nullable: true })
   paymentMethod: string;
   @CreateDateColumn()
   createdAt: Date;
