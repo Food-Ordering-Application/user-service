@@ -1279,6 +1279,7 @@ export class DeliverService {
         accountTransaction.driverId = driverId;
         accountTransaction.operationType = EOperationType.SYSTEM_ADD;
         accountTransaction.accountBalance = accountWallet.mainBalance;
+        accountTransaction.paymentMethod = paymentMethod;
 
         accountWallet.mainBalance += moneyToAdd;
 

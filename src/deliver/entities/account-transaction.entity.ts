@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { EOperationType } from '../enums';
+import { EOperationType, EPaymentMethod } from '../enums';
 import { Driver } from './driver.entity';
 
 @Entity()
@@ -18,6 +18,8 @@ export class AccountTransaction {
   accountBalance: number;
   @Column({ enum: EOperationType })
   operationType: string;
+  @Column({ enum: EPaymentMethod })
+  paymentMethod: string;
   @CreateDateColumn()
   createdAt: Date;
 
