@@ -1260,6 +1260,7 @@ export class DeliverService {
           amount: moneyToDeduct,
           driver: accountWallet.driver,
           operationType: EOperationType.SYSTEM_DEDUCT,
+          paymentMethod: paymentMethod,
           accountBalance: accountWallet.mainBalance,
         });
 
@@ -1278,6 +1279,7 @@ export class DeliverService {
           amount: moneyToDeduct,
           driver: accountWallet.driver,
           operationType: EOperationType.SYSTEM_DEDUCT,
+          paymentMethod: paymentMethod,
           accountBalance: accountWallet.mainBalance,
         });
 
