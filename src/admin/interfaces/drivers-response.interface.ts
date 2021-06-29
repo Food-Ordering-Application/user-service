@@ -5,4 +5,5 @@ export interface IDriversResponse {
   status: number;
   message: string;
   drivers?: IDriver[] | Driver[] | null;
+  total?: number;
 }

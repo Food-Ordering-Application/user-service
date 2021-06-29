@@ -97,9 +97,7 @@ export class AdminService {
           'driver.driverLicenseImageUrl',
           'driver.vehicleRegistrationCertificateImageUrl',
           'driver.isActive',
-        ])
-        .skip((page - 1) * size)
-        .take(size);
+        ]);
 
       console.log('from', from);
       console.log('to', to);
@@ -123,9 +121,13 @@ export class AdminService {
           });
       }
 
-      const drivers = await driverQueryBuilder
+      const total = await driverQueryBuilder.getCount();
+
+      driverQueryBuilder = driverQueryBuilder
         .orderBy('driver.createdAt', 'DESC')
-        .getMany();
+        .skip((page - 1) * size)
+        .take(size);
+      const drivers = await driverQueryBuilder.getMany();
 
       console.log('Drivers', drivers);
 
@@ -133,6 +135,7 @@ export class AdminService {
         status: HttpStatus.OK,
         message: 'Successfully',
         drivers: drivers,
+        total: total,
       };
     } catch (error) {
       this.logger.error(error);
