@@ -576,6 +576,9 @@ export class DeliverService {
         })
         .getOne();
 
+      console.log('DriverWalletMainBalance', driver.wallet.mainBalance);
+      console.log('moneyToWithdraw', moneyToWithdraw);
+
       //TODO: Tối thiểu tài khoản phải có 300k để có thể thực hiện rút tiền
       if (driver.wallet.mainBalance < MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW) {
         return {
@@ -729,6 +732,11 @@ export class DeliverService {
             withdrawTransaction,
           );
           await queryRunner.commitTransaction();
+          return {
+            status: HttpStatus.FORBIDDEN,
+            message: 'Partner account do not have enough funds',
+            reason: 'BUSINESS_INSUFFICIENT_FUNDS',
+          };
         }
       } else {
         this.logger.error(error);
