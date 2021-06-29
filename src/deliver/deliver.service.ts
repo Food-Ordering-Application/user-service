@@ -68,6 +68,8 @@ const DEFAULT_EXCHANGE_RATE = 0.00004;
 const COMMISSION_FEE_PERCENT = 0.05;
 const DEPOSIT_BALANCE_LIMIT_PERCENT = 0.5;
 const MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW = 300000;
+const MINIMUM_MONEY_TO_WITHDRAW_AMOUNT = 200000;
+const MAXIMUM_MONEY_TO_WITHDRAW_AMOUNT = 3000000;
 
 @Injectable()
 export class DeliverService {
@@ -579,6 +581,17 @@ export class DeliverService {
       console.log('DriverWalletMainBalance', driver.wallet.mainBalance);
       console.log('moneyToWithdraw', moneyToWithdraw);
 
+      //TODO: Số tiền muốn rút phải nằm trong 200k và 3 củ
+      if (
+        moneyToWithdraw < MINIMUM_MONEY_TO_WITHDRAW_AMOUNT ||
+        moneyToWithdraw > MAXIMUM_MONEY_TO_WITHDRAW_AMOUNT
+      ) {
+        return {
+          status: HttpStatus.FORBIDDEN,
+          message: 'Money to withdraw must >= 200000 and <=3000000',
+          reason: 'UNPROCESSIBLE_MONEYTOWITHDRAW',
+        };
+      }
       //TODO: Tối thiểu tài khoản phải có 300k để có thể thực hiện rút tiền
       if (driver.wallet.mainBalance < MINIMUM_MAIN_ACCOUNT_AMOUNT_TO_WITHDRAW) {
         return {
