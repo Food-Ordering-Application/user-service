@@ -139,21 +139,22 @@ export class CustomerService {
   ): Promise<ICustomerResponse> {
     try {
       console.log('findCustomerByPhoneNumber');
-      const customer = await this.customerRepository
-        .createQueryBuilder('customer')
-        .select([
-          'id',
-          'phoneNumber',
-          'password',
-          'name',
-          'gender',
-          'email',
-          'isEmailVerified',
-        ])
-        .where('customer.phoneNumber =:phoneNumber', {
+      const customer = await this.customerRepository.findOne(
+        {
           phoneNumber: phoneNumber,
-        })
-        .getOne();
+        },
+        {
+          select: [
+            'id',
+            'password',
+            'email',
+            'phoneNumber',
+            'isEmailVerified',
+            'isPhoneNumberVerified',
+            'gender',
+          ],
+        },
+      );
 
       console.log('customer', customer);
       return {
