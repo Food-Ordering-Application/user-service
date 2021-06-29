@@ -99,32 +99,32 @@ export class AdminService {
           'driver.isActive',
         ]);
 
-      console.log('from', from);
-      console.log('to', to);
+      // console.log('from', from);
+      // console.log('to', to);
 
-      if (from && to) {
-        const fromDate = momenttimezone
-          .tz(from, 'Asia/Ho_Chi_Minh')
-          .utc()
-          .format();
-        const toDate = momenttimezone.tz(to, 'Asia/Ho_Chi_Minh').utc().format();
+      // if (from && to) {
+      //   const fromDate = momenttimezone
+      //     .tz(from, 'Asia/Ho_Chi_Minh')
+      //     .utc()
+      //     .format();
+      //   const toDate = momenttimezone.tz(to, 'Asia/Ho_Chi_Minh').utc().format();
 
-        console.log('fromDate', fromDate);
-        console.log('toDate', toDate);
+      //   console.log('fromDate', fromDate);
+      //   console.log('toDate', toDate);
 
-        driverQueryBuilder = driverQueryBuilder
-          .andWhere('driver.createdAt >= :startDate', {
-            startDate: fromDate,
-          })
-          .andWhere('driver.createdAt <= :endDate', {
-            endDate: toDate,
-          });
-      }
+      //   driverQueryBuilder = driverQueryBuilder
+      //     .andWhere('driver.createdAt >= :startDate', {
+      //       startDate: fromDate,
+      //     })
+      //     .andWhere('driver.createdAt <= :endDate', {
+      //       endDate: toDate,
+      //     });
+      // }
 
       const total = await driverQueryBuilder.getCount();
 
       driverQueryBuilder = driverQueryBuilder
-        .orderBy('driver.createdAt', 'DESC')
+        // .orderBy('driver.createdAt', 'DESC')
         .skip((page - 1) * size)
         .take(size);
       const drivers = await driverQueryBuilder.getMany();
