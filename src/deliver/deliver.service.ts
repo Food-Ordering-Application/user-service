@@ -652,57 +652,6 @@ export class DeliverService {
           },
         ],
       };
-
-      // try {
-      //   const response = await payoutClient().execute(request);
-
-      //   console.log(`Response: ${JSON.stringify(response)}`);
-      //   // If call returns body in response, you can get the deserialized version from the result attribute of the response.
-      //   console.log(
-      //     `Payouts Create Response: ${JSON.stringify(response.result)}`,
-      //   );
-      //   //TODO: Tạo đối tượng DriverTransaction, WithdrawTransaction, trừ tiền trong accountWallet
-      //   const driverTransaction = new DriverTransaction();
-      //   driverTransaction.driver = driver;
-      //   driverTransaction.amount = moneyToWithdraw;
-      //   driverTransaction.type = EDriverTransactionType.WITHDRAW;
-      //   await queryRunner.manager.save(DriverTransaction, driverTransaction);
-      //   const withdrawTransaction = new WithdrawTransaction();
-      //   withdrawTransaction.senderBatchId = sender_batch_id;
-      //   withdrawTransaction.senderItemId = sender_item_id;
-      //   withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
-      //   withdrawTransaction.driverTransaction = driverTransaction;
-      //   await queryRunner.manager.save(
-      //     WithdrawTransaction,
-      //     withdrawTransaction,
-      //   );
-      //   await queryRunner.commitTransaction();
-      //   return {
-      //     status: HttpStatus.OK,
-      //     message: 'Withdraw is processing, please check your paypal account!',
-      //   };
-      // } catch (e) {
-      //   if (e.statusCode) {
-      //     //Handle server side/API failure response
-      //     console.log('Status code: ', e.statusCode);
-      //     // Parse failure response to get the reason for failure
-      //     const error = JSON.parse(e.message);
-      //     console.log('Failure response: ', error);
-      //     console.log('Headers: ', e.headers);
-      //     //TODO: Handle INSUFFICIENT_FUNDS
-      //     if (error.name === 'INSUFFICIENT_FUNDS') {
-      //       console.log('INSUFFICIENT_FUNDS error');
-      //     }
-      //   } else {
-      //     //Hanlde client side failure
-      //     console.log(e);
-      //   }
-      //   return {
-      //     status: HttpStatus.INTERNAL_SERVER_ERROR,
-      //     message: 'Withdraw failed',
-      //     reason: 'PAYPAL_BROKEN',
-      //   };
-      // }
       //TODO: Tạo đối tượng DriverTransaction, WithdrawTransaction, trừ tiền trong accountWallet
       driverTransaction = new DriverTransaction();
       driverTransaction.driver = driver;
@@ -749,7 +698,7 @@ export class DeliverService {
           return {
             status: HttpStatus.FORBIDDEN,
             message: 'Partner account do not have enough funds',
-            reason: 'BUSINESS_INSUFFICIENT_FUNDS',
+            reason: 'BUSINESS_ACCOUNT_INSUFFICIENT_FUNDS',
           };
         }
       } else {
