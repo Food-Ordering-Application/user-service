@@ -771,6 +771,43 @@ export class DeliverService {
             queryRunner.manager.save(AccountWallet, accountWallet),
           ]);
           break;
+        case 'PAYMENT.PAYOUTSITEM.FAILED':
+          console.log(
+            'senderbatchid',
+            resource.batch_header.sender_batch_header.sender_batch_id,
+          );
+          console.log('PAYMENT.PAYOUTSITEM.FAILED');
+          // TODO: Lấy thông tin driver dựa theo paypalOrderId
+          driverTransaction = await queryBuilder
+            .leftJoinAndSelect(
+              'driverTransaction.withdrawTransaction',
+              'withdrawTransaction',
+            )
+            .where('withdrawTransaction.senderBatchId = :senderBatchId', {
+              senderBatchId:
+                resource.batch_header.sender_batch_header.sender_batch_id,
+            })
+            .getOne();
+
+          if (!driverTransaction) {
+            console.log('Cannot found drivertransaction');
+            return;
+          }
+
+          //TODO: Update lại trạng thái WithdrawTransaction của driver
+          driverTransaction.withdrawTransaction.status =
+            EWithdrawTransactionStatus.FAILURE;
+          this.notificationServiceClient.emit('withdrawFailed', {
+            driverId: driverTransaction.driver.id,
+          });
+          console.log('SENT NOTIFICATION');
+
+          await queryRunner.manager.save(
+            WithdrawTransaction,
+            driverTransaction.withdrawTransaction,
+          );
+
+          break;
         case 'CHECKOUT.ORDER.COMPLETED':
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
           driverTransaction = await queryBuilder
