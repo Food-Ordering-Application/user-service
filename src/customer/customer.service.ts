@@ -138,10 +138,7 @@ export class CustomerService {
     phoneNumber: string,
   ): Promise<ICustomerResponse> {
     try {
-      // const customer = await this.customerRepository.findOne({
-      //   phoneNumber: phoneNumber,
-      // });
-
+      console.log('findCustomerByPhoneNumber');
       const customer = await this.customerRepository
         .createQueryBuilder('customer')
         .select([
@@ -157,6 +154,8 @@ export class CustomerService {
           phoneNumber: phoneNumber,
         })
         .getOne();
+
+      console.log('customer', customer);
       return {
         status: HttpStatus.OK,
         message: 'Customer was found successfully',
