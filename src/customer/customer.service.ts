@@ -694,7 +694,8 @@ export class CustomerService {
     updateCustomerInfoDto: UpdateCustomerInfoDto,
   ): Promise<IUpdateCustomerInfoResponse> {
     try {
-      const { customerId, avatar, email, gender, name } = updateCustomerInfoDto;
+      const { customerId, avatar, gender } = updateCustomerInfoDto;
+      let { email, name } = updateCustomerInfoDto;
       const customer = await this.customerRepository.findOne({
         id: customerId,
       });
@@ -715,6 +716,7 @@ export class CustomerService {
           avatar: avatar,
         };
       } else if (email) {
+        email = email.trim();
         //TODO: Tìm xem có acccount customer nào liên kết với email này hay chưa
         const findCustomer = await this.customerRepository.findOne({
           email: email,
@@ -753,6 +755,7 @@ export class CustomerService {
           gender: gender,
         };
       } else if (name) {
+        name = name.trim();
         customer.name = name;
         await this.customerRepository.save(customer);
         return {
