@@ -82,21 +82,21 @@ export class AdminService {
       let driverQueryBuilder = this.driverRepository
         .createQueryBuilder('driver')
         .select([
-          'id',
-          'phoneNumber',
-          'email',
-          'name',
-          'city',
-          'isBanned',
-          'isVerified',
-          'dateOfBirth',
-          'IDNumber',
-          'licensePlate',
-          'avatar',
-          'identityCardImageUrl',
-          'driverLicenseImageUrl',
-          'vehicleRegistrationCertificateImageUrl',
-          'isActive',
+          'driver.id',
+          'driver.phoneNumber',
+          'driver.email',
+          'driver.name',
+          'driver.city',
+          'driver.isBanned',
+          'driver.isVerified',
+          'driver.dateOfBirth',
+          'driver.IDNumber',
+          'driver.licensePlate',
+          'driver.avatar',
+          'driver.identityCardImageUrl',
+          'driver.driverLicenseImageUrl',
+          'driver.vehicleRegistrationCertificateImageUrl',
+          'driver.isActive',
         ])
         .skip((page - 1) * size)
         .take(size);
