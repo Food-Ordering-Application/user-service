@@ -382,10 +382,17 @@ export class DeliverService {
         .where('driver.id = :driverId', { driverId: driverId })
         .getOne();
 
-      const exchangeRate = await axios.get(
-        'https://free.currconv.com/api/v7/convert?q=VND_USD&compact=ultra&apiKey=4ea1fc028af307b152e8',
-      );
-      const rate = exchangeRate.data.VND_USD || DEFAULT_EXCHANGE_RATE;
+      let exchangeRate;
+      try {
+        exchangeRate = await axios.get(
+          'https://free.currconv.com/api/v7/convert?q=VND_USD&compact=ultra&apiKey=4ea1fc028af307b152e8',
+        );
+      } catch (error) {
+        console.log('Get ExchangeRate Error -> move to fallback exchangeRate');
+      }
+      const rate = exchangeRate
+        ? exchangeRate.data.VND_USD
+        : DEFAULT_EXCHANGE_RATE;
       //TODO: Đổi tiền muốn chuyển từ VND sang USD
       const moneyToDepositUSD = parseFloat((moneyToDeposit * rate).toFixed(2));
 
