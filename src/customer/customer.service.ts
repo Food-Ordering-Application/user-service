@@ -93,11 +93,13 @@ export class CustomerService {
     createCustomerDto: CreateCustomerDto,
   ): Promise<ICustomerResponse> {
     let result: ICustomerResponse;
-
+    let { password, phoneNumber } = createCustomerDto;
+    password = password.trim();
+    phoneNumber = phoneNumber.trim();
     // Tìm xem PhoneNumber có tồn tại hay chưa
     try {
       const customer = await this.customerRepository.findOne({
-        phoneNumber: createCustomerDto.phoneNumber,
+        phoneNumber: phoneNumber,
       });
       // Nếu người dùng đã tồn tại
       if (customer) {
@@ -110,8 +112,8 @@ export class CustomerService {
         // Nếu chưa tồn tại thì tạo user mới
         // Hash password
         const newCustomer = new Customer();
-        newCustomer.phoneNumber = createCustomerDto.phoneNumber;
-        newCustomer.password = createCustomerDto.password;
+        newCustomer.phoneNumber = phoneNumber;
+        newCustomer.password = password;
 
         await this.customerRepository.save(newCustomer);
         delete newCustomer.password;
