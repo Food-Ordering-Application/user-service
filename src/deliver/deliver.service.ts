@@ -551,7 +551,7 @@ export class DeliverService {
   ): Promise<ISimpleResponse> {
     const { driverId, callerId, moneyToWithdraw } =
       withdrawMoneyToPaypalAccountDto;
-    let queryRunner;
+    let queryRunner, driverTransaction, withdrawTransaction;
     try {
       console.log(callerId, driverId);
       //TODO: Nếu như driverId !== callerId
@@ -635,63 +635,110 @@ export class DeliverService {
           },
         ],
       };
+
+      // try {
+      //   const response = await payoutClient().execute(request);
+
+      //   console.log(`Response: ${JSON.stringify(response)}`);
+      //   // If call returns body in response, you can get the deserialized version from the result attribute of the response.
+      //   console.log(
+      //     `Payouts Create Response: ${JSON.stringify(response.result)}`,
+      //   );
+      //   //TODO: Tạo đối tượng DriverTransaction, WithdrawTransaction, trừ tiền trong accountWallet
+      //   const driverTransaction = new DriverTransaction();
+      //   driverTransaction.driver = driver;
+      //   driverTransaction.amount = moneyToWithdraw;
+      //   driverTransaction.type = EDriverTransactionType.WITHDRAW;
+      //   await queryRunner.manager.save(DriverTransaction, driverTransaction);
+      //   const withdrawTransaction = new WithdrawTransaction();
+      //   withdrawTransaction.senderBatchId = sender_batch_id;
+      //   withdrawTransaction.senderItemId = sender_item_id;
+      //   withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
+      //   withdrawTransaction.driverTransaction = driverTransaction;
+      //   await queryRunner.manager.save(
+      //     WithdrawTransaction,
+      //     withdrawTransaction,
+      //   );
+      //   await queryRunner.commitTransaction();
+      //   return {
+      //     status: HttpStatus.OK,
+      //     message: 'Withdraw is processing, please check your paypal account!',
+      //   };
+      // } catch (e) {
+      //   if (e.statusCode) {
+      //     //Handle server side/API failure response
+      //     console.log('Status code: ', e.statusCode);
+      //     // Parse failure response to get the reason for failure
+      //     const error = JSON.parse(e.message);
+      //     console.log('Failure response: ', error);
+      //     console.log('Headers: ', e.headers);
+      //     //TODO: Handle INSUFFICIENT_FUNDS
+      //     if (error.name === 'INSUFFICIENT_FUNDS') {
+      //       console.log('INSUFFICIENT_FUNDS error');
+      //     }
+      //   } else {
+      //     //Hanlde client side failure
+      //     console.log(e);
+      //   }
+      //   return {
+      //     status: HttpStatus.INTERNAL_SERVER_ERROR,
+      //     message: 'Withdraw failed',
+      //     reason: 'PAYPAL_BROKEN',
+      //   };
+      // }
+      //TODO: Tạo đối tượng DriverTransaction, WithdrawTransaction, trừ tiền trong accountWallet
+      driverTransaction = new DriverTransaction();
+      driverTransaction.driver = driver;
+      driverTransaction.amount = moneyToWithdraw;
+      driverTransaction.type = EDriverTransactionType.WITHDRAW;
+      await queryRunner.manager.save(DriverTransaction, driverTransaction);
+      withdrawTransaction = new WithdrawTransaction();
+      withdrawTransaction.senderBatchId = sender_batch_id;
+      withdrawTransaction.senderItemId = sender_item_id;
+      withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
+      withdrawTransaction.driverTransaction = driverTransaction;
+
       const request = new paypalPayout.payouts.PayoutsPostRequest();
       request.requestBody(requestBody);
-      try {
-        const response = await payoutClient().execute(request);
-
-        console.log(`Response: ${JSON.stringify(response)}`);
-        // If call returns body in response, you can get the deserialized version from the result attribute of the response.
-        console.log(
-          `Payouts Create Response: ${JSON.stringify(response.result)}`,
-        );
-        //TODO: Tạo đối tượng DriverTransaction, WithdrawTransaction, trừ tiền trong accountWallet
-        const driverTransaction = new DriverTransaction();
-        driverTransaction.driver = driver;
-        driverTransaction.amount = moneyToWithdraw;
-        driverTransaction.type = EDriverTransactionType.WITHDRAW;
-        await queryRunner.manager.save(DriverTransaction, driverTransaction);
-        const withdrawTransaction = new WithdrawTransaction();
-        withdrawTransaction.senderBatchId = sender_batch_id;
-        withdrawTransaction.senderItemId = sender_item_id;
-        withdrawTransaction.status = EWithdrawTransactionStatus.PROCESSING;
-        withdrawTransaction.driverTransaction = driverTransaction;
-
-        await queryRunner.manager.save(
-          WithdrawTransaction,
-          withdrawTransaction,
-        );
-        await queryRunner.commitTransaction();
-        return {
-          status: HttpStatus.OK,
-          message: 'Withdraw is processing, please check your paypal account!',
-        };
-      } catch (e) {
-        if (e.statusCode) {
-          //Handle server side/API failure response
-          console.log('Status code: ', e.statusCode);
-          // Parse failure response to get the reason for failure
-          const error = JSON.parse(e.message);
-          console.log('Failure response: ', error);
-          console.log('Headers: ', e.headers);
-        } else {
-          //Hanlde client side failure
-          console.log(e);
+      const response = await payoutClient().execute(request);
+      console.log(`Response: ${JSON.stringify(response)}`);
+      // If call returns body in response, you can get the deserialized version from the result attribute of the response.
+      console.log(
+        `Payouts Create Response: ${JSON.stringify(response.result)}`,
+      );
+      await queryRunner.manager.save(WithdrawTransaction, withdrawTransaction);
+      await queryRunner.commitTransaction();
+      return {
+        status: HttpStatus.OK,
+        message: 'Withdraw is processing, please check your paypal account!',
+      };
+    } catch (error) {
+      if (error.statusCode) {
+        //Handle server side/API failure response
+        console.log('Status code: ', error.statusCode);
+        // Parse failure response to get the reason for failure
+        const failedError = JSON.parse(error.message);
+        console.log('Failure response: ', failedError);
+        console.log('Headers: ', error.headers);
+        //TODO: Handle INSUFFICIENT_FUNDS
+        if (failedError.name === 'INSUFFICIENT_FUNDS') {
+          console.log('INSUFFICIENT_FUNDS error');
+          withdrawTransaction.status = EWithdrawTransactionStatus.FAILURE;
+          await queryRunner.manager.save(
+            WithdrawTransaction,
+            withdrawTransaction,
+          );
+          await queryRunner.commitTransaction();
         }
+      } else {
+        this.logger.error(error);
+        await queryRunner.rollbackTransaction();
         return {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Withdraw failed',
-          reason: 'PAYPAL_BROKEN',
+          message: error.message,
+          reason: 'OUR_SYSTEM_BROKEN',
         };
       }
-    } catch (error) {
-      this.logger.error(error);
-      await queryRunner.rollbackTransaction();
-      return {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error.message,
-        reason: 'OUR_SYSTEM_BROKEN',
-      };
     } finally {
       if (queryRunner) {
         await queryRunner.release();
