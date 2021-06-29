@@ -52,6 +52,8 @@ export class Customer {
   @Column({ nullable: true, type: 'bigint' })
   resetPasswordTokenExpiration: number;
 
+  @Column({ nullable: true, default: false })
+  isBanned: boolean;
   @OneToMany(
     () => CustomerAddress,
     (customerAddress) => customerAddress.customer,
