@@ -771,12 +771,12 @@ export class DeliverService {
             queryRunner.manager.save(AccountWallet, accountWallet),
           ]);
           break;
-        case 'PAYMENT.PAYOUTSITEM.FAILED':
+        case 'PAYMENT.PAYOUTS-ITEM.FAILED':
           console.log(
             'senderbatchid',
             resource.batch_header.sender_batch_header.sender_batch_id,
           );
-          console.log('PAYMENT.PAYOUTSITEM.FAILED');
+          console.log('PAYMENT.PAYOUTS-ITEM.FAILED');
           // TODO: Lấy thông tin driver dựa theo paypalOrderId
           driverTransaction = await queryBuilder
             .leftJoinAndSelect(
