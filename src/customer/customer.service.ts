@@ -138,9 +138,25 @@ export class CustomerService {
     phoneNumber: string,
   ): Promise<ICustomerResponse> {
     try {
-      const customer = await this.customerRepository.findOne({
-        phoneNumber: phoneNumber,
-      });
+      // const customer = await this.customerRepository.findOne({
+      //   phoneNumber: phoneNumber,
+      // });
+
+      const customer = await this.customerRepository
+        .createQueryBuilder('customer')
+        .select([
+          'id',
+          'phoneNumber',
+          'password',
+          'name',
+          'gender',
+          'email',
+          'isEmailVerified',
+        ])
+        .where('customer.phoneNumber =:phoneNumber', {
+          phoneNumber: phoneNumber,
+        })
+        .getOne();
       return {
         status: HttpStatus.OK,
         message: 'Customer was found successfully',
