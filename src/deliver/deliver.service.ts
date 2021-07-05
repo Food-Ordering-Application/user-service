@@ -26,6 +26,7 @@ import {
   DriverPaymentInfo,
   DriverTransaction,
   PayinTransaction,
+  RestaurantTransaction,
   WithdrawTransaction,
 } from './entities';
 import {
@@ -37,6 +38,7 @@ import {
   EGeneralTransactionStatus,
   EIsActive,
   EAccountTransaction,
+  ERestaurantTransactionType,
 } from './enums';
 import {
   IAccountTransactionsReponse,
@@ -88,14 +90,12 @@ export class DeliverService {
     private driverPaymentInfoRepository: Repository<DriverPaymentInfo>,
     @InjectRepository(DriverTransaction)
     private driverTransactionRepository: Repository<DriverTransaction>,
-    @InjectRepository(PayinTransaction)
-    private payinTransactionRepository: Repository<PayinTransaction>,
-    @InjectRepository(WithdrawTransaction)
-    private withdrawTransactionRepository: Repository<WithdrawTransaction>,
     @InjectRepository(DeliveryHistory)
     private deliveryHistoryRepository: Repository<DeliveryHistory>,
     @InjectRepository(AccountTransaction)
     private accountTransactionRepository: Repository<AccountTransaction>,
+    @InjectRepository(RestaurantTransaction)
+    private restaurantTransactionRepository: Repository<RestaurantTransaction>,
     @InjectConnection()
     private connection: Connection,
     @Inject(NOTIFICATION_SERVICE)
@@ -270,8 +270,9 @@ export class DeliverService {
               canAccept: true,
             };
           }
-        //TODO: Trường hợp Paypal (Trả trước)
+        //TODO: Trường hợp Paypal || ZALOPAY (Trả trước)
         case EPaymentMethod.PAYPAL:
+        case EPaymentMethod.ZALOPAY:
           //TODO: Check xem trong ví (tài khoản chính - 20%*shippingFee - tiền hàng).abs()
           //TODO: > 50% * tài khoản ký quỹ
           if (
@@ -1250,7 +1251,10 @@ export class DeliverService {
         return;
       }
 
-      if (paymentMethod === EPaymentMethod.PAYPAL) {
+      if (
+        paymentMethod === EPaymentMethod.PAYPAL ||
+        paymentMethod === EPaymentMethod.ZALOPAY
+      ) {
         //TODO: Trừ 20%*shippingFee + tiền hàng trong tài khoản driver
         const moneyToDeduct =
           COMMISSION_FEE_PERCENT * shippingFee + orderSubtotal;
@@ -1315,6 +1319,8 @@ export class DeliverService {
         orderId,
         paymentMethod,
         shippingFee,
+        restaurantId,
+        orderSubTotal,
       } = orderHasBeenCompletedEventDto;
 
       console.log('deliveryDistance', deliveryDistance);
@@ -1324,16 +1330,20 @@ export class DeliverService {
       console.log('orderId', orderId);
       console.log('paymentMethod', paymentMethod);
       console.log('shippingFee', shippingFee);
+      console.log('restaurantId', restaurantId);
 
       queryRunner = this.connection.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
-
+      const promise: (() => Promise<any>)[] = [];
       //TODO: Check trường hợp trả trước thì trả lại tiền hàng + fullship vào ví cho driver
-      if (paymentMethod === EPaymentMethod.PAYPAL) {
+      if (
+        paymentMethod === EPaymentMethod.PAYPAL ||
+        paymentMethod === EPaymentMethod.ZALOPAY
+      ) {
         const moneyToAdd = orderGrandTotal;
         console.log('MoneyToAdd', moneyToAdd);
-        console.log('PAYPALPAYMENT');
+        console.log('PaymentMethod', paymentMethod);
 
         const accountWallet = await queryRunner.manager
           .getRepository(AccountWallet)
@@ -1353,10 +1363,89 @@ export class DeliverService {
 
         accountWallet.mainBalance += moneyToAdd;
 
-        await Promise.all([
-          queryRunner.manager.save(AccountWallet, accountWallet),
-          queryRunner.manager.save(AccountTransaction, accountTransaction),
-        ]);
+        //* Update accountWallet promise
+        const updateAccountWalletPromise = () =>
+          queryRunner.manager.save(AccountWallet, accountWallet);
+        //* Create accountTransaction promise
+        const createAccountTransactionPromise = () =>
+          queryRunner.manager.save(AccountTransaction, accountTransaction);
+
+        promise.push(
+          updateAccountWalletPromise,
+          createAccountTransactionPromise,
+        );
+      }
+
+      //TODO: Tạo 2 đối tượng RestaurantTransaction ORDERSUB COMISSION_FEE
+      const orderSubRestaurantTransaction =
+        this.restaurantTransactionRepository.create({
+          amount: orderSubTotal,
+          restaurantId: restaurantId,
+          type: ERestaurantTransactionType.ORDERSUB,
+        });
+
+      //* Create restaurantTransaction type = ORDERSUB promise
+      const createOrderSubRestaurantTransactionPromise = () =>
+        queryRunner.manager.save(
+          RestaurantTransaction,
+          orderSubRestaurantTransaction,
+        );
+
+      const commissionFeeRestaurantTransaction =
+        this.restaurantTransactionRepository.create({
+          amount: orderSubTotal * COMMISSION_FEE_PERCENT,
+          restaurantId: restaurantId,
+          type: ERestaurantTransactionType.COMMISSION_FEE,
+        });
+
+      //* Create restaurantTransaction type = COMMISSION_FEE promise
+      const createCommissionFeeRestaurantTransactionPromise = () =>
+        queryRunner.manager.save(
+          RestaurantTransaction,
+          commissionFeeRestaurantTransaction,
+        );
+
+      promise.push(
+        createOrderSubRestaurantTransactionPromise,
+        createCommissionFeeRestaurantTransactionPromise,
+      );
+      //TODO: Nếu là COD và PAYPAL thì tạo thêm RestaurantTransaction PAID
+      if (
+        paymentMethod === EPaymentMethod.COD ||
+        paymentMethod == EPaymentMethod.PAYPAL
+      ) {
+        const paidRestaurantTransaction =
+          this.restaurantTransactionRepository.create({
+            amount: orderSubTotal,
+            restaurantId: restaurantId,
+            type: ERestaurantTransactionType.PAID,
+          });
+        //* Create restaurantTransaction type = PAID promise
+        const createPaidRestaurantTransactionPromise = () =>
+          queryRunner.manager.save(
+            RestaurantTransaction,
+            paidRestaurantTransaction,
+          );
+        promise.push(createPaidRestaurantTransactionPromise);
+      }
+      //TODO: Nếu là ZALOPAY và PAYPAL thì tạo thêm RestaurantTransaction DEDUCE
+      if (
+        paymentMethod === EPaymentMethod.ZALOPAY ||
+        paymentMethod == EPaymentMethod.PAYPAL
+      ) {
+        const deduceRestaurantTransaction =
+          this.restaurantTransactionRepository.create({
+            amount: orderSubTotal * COMMISSION_FEE_PERCENT,
+            restaurantId: restaurantId,
+            type: ERestaurantTransactionType.DEDUCE,
+          });
+        //* Create restaurantTransaction type = DEDUCE promise
+        const createDeduceRestaurantTransactionPromise = () =>
+          queryRunner.manager.save(
+            RestaurantTransaction,
+            deduceRestaurantTransaction,
+          );
+        promise.push(createDeduceRestaurantTransactionPromise);
       }
 
       const deliveryHistory = this.deliveryHistoryRepository.create({
@@ -1368,7 +1457,8 @@ export class DeliverService {
         commissionFee: shippingFee * COMMISSION_FEE_PERCENT,
         income: shippingFee * (1 - COMMISSION_FEE_PERCENT),
       });
-      await queryRunner.manager.save(DeliveryHistory, deliveryHistory);
+      promise.push(queryRunner.manager.save(DeliveryHistory, deliveryHistory));
+      await Promise.all(promise.map((callback) => callback()));
       await queryRunner.commitTransaction();
     } catch (error) {
       this.logger.error(error);

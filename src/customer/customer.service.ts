@@ -36,7 +36,7 @@ import { transporter } from './config/nodemailer.config';
 import { google } from 'googleapis';
 import { VerifyCustomerEmailDto } from './dto/verify-customer-email.dto';
 
-const RESET_PASSWORD_TIMEOUT_EXPIRATION = 5 * 36000000;
+const RESET_PASSWORD_TIMEOUT_EXPIRATION = 5 * 60 * 1000;
 
 const sendMail = (mailOptions) => {
   console.log('Transporter', transporter);

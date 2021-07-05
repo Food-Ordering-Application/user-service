@@ -6,3 +6,4 @@ export { DriverTransaction } from './driver-transaction.entity';
 export { DeliveryHistory } from './delivery-history.entity';
 export { PayinTransaction } from './payin-transaction.entity';
 export { WithdrawTransaction } from './withdraw-transaction.entity';
+export { RestaurantTransaction } from './restaurant-transaction.entity';

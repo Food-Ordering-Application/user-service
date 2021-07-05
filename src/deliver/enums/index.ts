@@ -6,3 +6,4 @@ export { EPayinTransactionStatus } from './payin-transaction-status.enum';
 export { EGeneralTransactionStatus } from './general-transaction-status.enum';
 export { EIsActive } from './isActive.enum';
 export { EAccountTransaction } from './account-transaction-type.enum';
+export { ERestaurantTransactionType } from './restaurant-transaction-type.enum';

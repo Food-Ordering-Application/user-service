@@ -13,6 +13,7 @@ import {
   PayinTransaction,
   WithdrawTransaction,
 } from './entities';
+import { RestaurantTransaction } from './entities/restaurant-transaction.entity';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import {
       DriverTransaction,
       PayinTransaction,
       WithdrawTransaction,
+      RestaurantTransaction,
     ]),
   ],
   controllers: [DeliverController],
